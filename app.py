@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, request, jsonify, url_for
+from flask import Flask, request, jsonify
 import json
+from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
 
 app = Flask(__name__)
+cors = CORS(app)
+
 app.config['SECRET_KEY'] = 'this is secret'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///BlockSolve.db'
-
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -73,7 +75,7 @@ class Problem(db.Model):
 def hello_world():
     return jsonify(greeting = '')
 
-@app.route('/problems', methods=['GET'])
+@app.route('/problems', methods=['GET', 'OPTIONS'])
 def view_problems(category=''):
     category = request.args.get('category')
     # query parameter category에 정수값이 지정될 때
@@ -87,7 +89,7 @@ def view_problems(category=''):
         problemInAll = pd.read_sql(queryInAll.statement, queryInAll.session.bind)
         return jsonify(data = json.loads(problemInAll.to_json(orient='records')))
 
-@app.route('/problems/<pid>', methods=['GET'])
+@app.route('/problems/<pid>', methods=['GET', 'OPTIONS'])
 def view_each_problem(pid=''):
     queryByPid = Problem.query.filter(Problem.pid == pid)
     if queryByPid.count():
@@ -95,5 +97,6 @@ def view_each_problem(pid=''):
         return jsonify( data = json.loads(problemByPid.to_json(orient='records')),result = 200)
     else :
         return jsonify(result = 404, err_msg = "Not found")
+
 if __name__ == '__main__':
     app.run(debug=True)
