@@ -17,7 +17,7 @@ class Problem(db.Model):
     __tablename__ = "Problem"
     pid = db.Column(db.BigInteger(), primary_key=True)
     title = db.Column(db.String(), unique=True)
-    createdAt = db.Column(db.String())
+    createdAt = db.Column(db.BigInteger())
     creator = db.Column(db.String(256))
     category = db.Column(db.String(256))
     content = db.Column(db.String())
