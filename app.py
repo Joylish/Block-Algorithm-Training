@@ -23,58 +23,84 @@ class Problem(db.Model):
     createdAt = db.Column(db.BigInteger())
     creator = db.Column(db.String(256))
     category = db.Column(db.String(256))
-    txtcontent = db.Column(db.String())
-    #imgcontent = db.Column(db.
+    content = db.Column(db.String())
     inputDetail = db.Column(db.String())
     outputDetail = db.Column(db.String())
     numSub = db.Column(db.Integer())
     correctRate = db.Column(db.REAL())
     initXML = db.Column(db.String())
+    example = db.Column(db.String())
+
 
     def __init__(self, pid, title, createdAt, creator,
-                 category, txtcontent, imgcontent, inputDetail, outputDetail,
-                 numSub, correctRate, initXML):
+                 category, content, inputDetail, outputDetail,
+                 numSub, correctRate, initXML, example):
         self.pid = pid
         self.createdAt = createdAt
         self.creator = creator
         self.category = category
         self.title = title
-        self.txtcontent = txtcontent
-        self.imgcontent = imgcontent
+        self.content = content
         self.inputDetail = inputDetail
         self.outputDetail = outputDetail
         self.numSub = numSub
         self.correctRate = correctRate
         self.initXML = initXML
+        self.example = example
 
-# class Save(db.model):
-#     __tablename__: "Save"
-#     sid = db.Column(db.BigInteger(), primary_key= True)
-#     pid = db.Column(db.BigInteger())
-#     uid = db.Column(db.BigInteger())
-#     savedXml = db.Column(db.text())
-#     savedAt = db.Column(db.String())
-#
-# class Submission(db.model):
-#     __tablename__: "Submission"
-#     sid = db.column(db.BigInteger(), primary_key =True)
-#     pid = db.column(db.BigInteger())
-#     uid = db.column(db.BigInteger())
-#     submittedAt = db.column(db.String())
-#     sourceCode = db.column(db.String())
-#
-# class Testcase(db.model):
-#     __tablename__: "Testcase"
-#     tid = db.column(db.BigInteger(), primary_key=True)
-#     pid = db.column(db.BigInteger())
-#     input = db.column(db.String())
-#     output = db.column(db.String())
-#
-# class Testresult(db.model):
-#     __tablename__: "Testresult"
-#     rid = db.column(db.BigInteger(), primary_key=True)
-#     sid = db.column(db.BigInteger())
-#     result = db.column(db.Integer())
+class SavedSolution(db.model):
+    __tablename__: "SavedSolution"
+    pid = db.Column(db.BigInteger())
+    uid = db.Column(db.BigInteger())
+    savedAt = db.Column(db.String())
+    savedXml = db.Column(db.text())
+    def __init__(self, pid, uid, savedAt, savedXML):
+        self.pid = pid
+        self.uid = uid
+        self.savedAt = savedAt
+        self.savedXML = savedXML
+
+class SubSolution(db.model):
+    __tablename__: "SubSolution"
+    sid = db.column(db.BigInteger(), primary_key =True)
+    pid = db.column(db.BigInteger())
+    uid = db.column(db.BigInteger())
+    subAt = db.column(db.String())
+    subXML = db.column(db.String())
+    sourceCode = db.column(db.String())
+    def __init__(self, sid, pid, uid, subAt, subXML, sourceCode):
+        self.sid = sid
+        self.pid = pid
+        self.uid = uid
+        self.savedAt = subAt
+        self.subXML = subXML
+        self.sourceCode =sourceCode
+
+class Testcase(db.model):
+    __tablename__: "Testcase"
+    tid = db.column(db.BigInteger(), primary_key=True)
+    pid = db.column(db.BigInteger())
+    input = db.column(db.String())
+    output = db.column(db.String())
+    def __init__(self, tid, pid, input, output):
+        self.tid = tid
+        self.pid = pid
+        self.input = input
+        self.output = output
+
+class Testresult(db.model):
+    __tablename__: "Testresult"
+    rid = db.column(db.BigInteger(), primary_key=True)
+    tid = db.column(db.BigInteger())
+    sid = db.column(db.BigInteger())
+    result = db.column(db.String())
+
+    def __init__(self, rid, tid, sid, result):
+        self.rid = rid
+        self.tid = tid
+        self.sid = sid
+        self.result = result
+
 # 메인화면
 @app.route('/')
 def hello_world():
