@@ -13,6 +13,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///BlockSolve.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+
+
+
 class Problem(db.Model):
     __tablename__ = "Problem"
     pid = db.Column(db.BigInteger(), primary_key=True)
@@ -20,25 +23,27 @@ class Problem(db.Model):
     createdAt = db.Column(db.BigInteger())
     creator = db.Column(db.String(256))
     category = db.Column(db.String(256))
-    content = db.Column(db.String())
+    txtcontent = db.Column(db.String())
+    #imgcontent = db.Column(db.
     inputDetail = db.Column(db.String())
     outputDetail = db.Column(db.String())
-    numSubmission = db.Column(db.Integer())
+    numSub = db.Column(db.Integer())
     correctRate = db.Column(db.REAL())
     initXML = db.Column(db.String())
 
     def __init__(self, pid, title, createdAt, creator,
-                 category, content, inputDetail, outputDetail,
-                 numSubmission, correctRate, initXML):
+                 category, txtcontent, imgcontent, inputDetail, outputDetail,
+                 numSub, correctRate, initXML):
         self.pid = pid
         self.createdAt = createdAt
         self.creator = creator
         self.category = category
         self.title = title
-        self.content = content
+        self.txtcontent = txtcontent
+        self.imgcontent = imgcontent
         self.inputDetail = inputDetail
         self.outputDetail = outputDetail
-        self.numSubmission = numSubmission
+        self.numSub = numSub
         self.correctRate = correctRate
         self.initXML = initXML
 
@@ -76,7 +81,7 @@ def hello_world():
     return jsonify(greeting = '')
 
 @app.route('/problems', methods=['GET', 'OPTIONS'])
-def view_problems(category=''):
+def view_problems():
     category = request.args.get('category')
     # query parameter category에 정수값이 지정될 때
     if category:
@@ -98,5 +103,48 @@ def view_each_problem(pid=''):
     else :
         return jsonify(result = 404, err_msg = "Not found")
 
+#임시저장
+mysav ={{'pid': '1004','title': '괄호의 값', 'category': '카테고리2', 'creator': '강하민', 'correctRate': '0.521',
+       'numSub': '156', 'subXML': '<init></init>'}}
+
+
+
+#제출-post
+psub = {'pid': '1000', 'subAt': '', 'subXML': '<init></init>', 'sourceCode': 'A, B = map(int,input().split())\nprint(A+B)'}
+app.sid_count = 1
+app.submit = {}
+
+@app.route('/submit', methods=['POST'])
+def post_my_submit(pid=''):
+        #request.on_json_loading_failed = on_json_loading_failed_return_dict
+        #mysub = request.get_json(silent=True)
+        psub["sid"] = app.sid_count
+        app.submit[app.sid_count] = psub
+        app.sid_count += 1
+
+#제출상태-get
+#상태에 따라
+#1)시도-get
+#2)해결-get
+subdata = [{'pid': '1004','title': '최대자리곱', 'category': '카테고리1', 'creator': '강하민', 'correctRate': '0.521',
+       'numSub': '156', 'saveXML': '<init></init>', 'finalstate': '제출완료'},{'pid': '1005','title': '트리의 아름다움', 'category': '카테고리3',
+        'creator': 'newstein', 'correctRate': '0.521','numSub': '156' , 'saveXML': '<init></init>', 'finalstate': '제출완료'},
+        {'pid':'1001', '문제이름': 'A-B', '카테고리': '카테고리1', '만든이': '기쁜 국수', '정답률': '0.521',
+       'numSub': '156', 'subXML': '<init></init>', 'finalstate': '제출성공'},{'pid': '1000', '문제이름': 'A+B', '카테고리': '카테고리1',
+        '만든이': '기쁜 국수', '정답률': '0.521', 'numSub': '156', 'saveXML': '<init></init>', 'finalstate': '제출성공'}]
+
+@app.route('/status', methods=['GET'])
+def view_my_status():
+    # queryByPid = Problem.query.filter(Submit.pid == pid)
+    #if queryByPid.count():
+    if subdata != None:
+            #submitByPid = Problem.query.filter(Submit.pid == pid)
+            #submitByPid = pd.read_sql(queryByPid.statement, queryByPid.session.bind)
+        return jsonify(data=json.loads(subdata.to_json(orient='records')), result=200)
+    else:
+        return jsonify(result=404, err_msg="Not found")
+
+def on_json_loading_failed_return_dict(e):
+    return {}
 if __name__ == '__main__':
     app.run(debug=True)
