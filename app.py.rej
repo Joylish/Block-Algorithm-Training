@@ -1,0 +1,7 @@
+diff a/app.py b/app.py	(rejected hunks)
+@@ -1,5 +1,4 @@
+ # -*- coding: utf-8 -*-
+-from flask import Flask, request, jsonify, url_for
+ from flask import Flask, request, jsonify
+ import json
+ from flask_cors import CORS
