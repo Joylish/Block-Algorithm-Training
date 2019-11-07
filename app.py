@@ -7,8 +7,6 @@ import json
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship, backref
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -17,8 +15,6 @@ app.config['SECRET_KEY'] = 'this is secret'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///BlockSolve.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-
-
 
 class Problem(db.Model):
     __tablename__ = "Problem"
@@ -166,7 +162,6 @@ int_pid = 1000
 
 app.aid_count = 1
 
-
 app.svsol = [{'pid': 1001, 'uid': 1, 'savedAt': 1570805217, 'savedXML':'<xml><block type="text_print" x="30" y="90"><value name="TEXT"><block type="text"><field name="TEXT">abc</field></block></value></block></xml>'},
                 {'pid': 1002, 'uid': 1, 'savedAt': 1570805217, 'savedXML':'<xml></xml>'},
                   {'pid': 1003, 'uid': 1, 'savedAt': 1570805217, 'savedXML':'<xml></xml>'}]
@@ -251,18 +246,20 @@ testresult = [{'sid': 1, 'tid': 30, 'result': '성공'},
               {'sid': 4, 'tid': 4, 'result': '성공'},
               {'sid': 4, 'tid': 5, 'result': '실패'}
               ]
-
 @app.route('/submit', methods=['POST', 'GET'])
 def sub_sol():
+    sid = 5;
     if request.method == 'POST':
         request.on_json_loading_failed = on_json_loading_failed_return_dict
         mysub = request.get_json(force=True)
+        mysub['sid'] = sid
+        sid += 1
         print(mysub)
         try:
             app.subsol.append(mysub)
             # app.subsol = sorted(app.subsol, key=itemgetter('pid'))
             print(app.subsol)
-            return jsonify(result=True, msg="Successful to create solution.")
+            return jsonify(result=True, msg="Successful to submit solution.")
         except KeyError as e:
             return jsonify(result=False, err_msg="Check your key")
 
