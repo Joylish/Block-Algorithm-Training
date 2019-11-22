@@ -12,7 +12,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-import unittest
+import unitTest
 import random
 import string
 from mock import Mock, call
@@ -24,7 +24,7 @@ def randomword(length):
     return ''.join(random.choice(string.printable) for i in range(length))
 
 
-class TestRole(unittest.TestCase):
+class TestRole(unitTest.TestCase):
 
     def setUp(self):
         self.iam_client = Mock()

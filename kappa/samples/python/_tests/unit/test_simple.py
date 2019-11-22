@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-import unittest
+import unitTest
 
 import simple
 
 
-class TestSimple(unittest.TestCase):
+class TestSimple(unitTest.TestCase):
 
     def test_foobar(self):
         self.assertEqual(simple.foobar(), 42)
