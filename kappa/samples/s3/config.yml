@@ -1,0 +1,41 @@
+---
+# Change profile and region to suit your application
+profile: personal
+region: us-east-1
+iam:
+  # In this case, we are using an existing managed policy so we just
+  # need to put the name of that policy here.
+  policy:
+    name: AWSLambdaExecute
+  # The name of the IAM role used for executing the Lambda function.
+  # The policy listed above will be attached to this role once it is created.
+  role:
+    name: KappaS3SampleRole
+lambda:
+  name: S3Sample
+  zipfile_name: S3Sample.zip
+  description: Testing S3 Lambda handler
+  path: examplefolder/
+  handler: CreateThumbnail.handler
+  runtime: nodejs
+  memory_size: 128
+  timeout: 3
+  mode: event
+  test_data: input.json
+  permissions:
+    -
+      statement_id: s3_invoke
+      action: lambda:invokeFunction
+      principal: s3.amazonaws.com
+      # change this to refer to your own SNS topic
+      source_arn: arn:aws:s3:::test-1245812163
+  event_sources:
+    -
+      arn: arn:aws:s3:::test-1245812163
+      events:
+        - s3:ObjectCreated:*
+      key_filters:
+        - type: prefix
+          value: someprefix/
+        - type: suffix
+          value: .zip

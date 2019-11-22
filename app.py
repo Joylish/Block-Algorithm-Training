@@ -1,7 +1,9 @@
-import json
-from operator import itemgetter
 
+# -*- coding: utf-8 -*-
+from operator import itemgetter
 from flask import Flask, request, jsonify
+import json
+
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
@@ -10,10 +12,6 @@ app = Flask(__name__)
 cors = CORS(app)
 
 app.config['SECRET_KEY'] = 'this is secret'
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://blocksolve:blocklysolve0130@202.30.31.251/blocksolve'
-
-
-
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///BlockSolve.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -48,6 +46,65 @@ class Problem(db.Model):
         self.correctRate = correctRate
         self.initXML = initXML
 
+class SavedSolution(db.Model):
+    __tablename__ = "SavedSolution"
+    pid = db.Column(db.BigInteger(),primary_key=True)
+    uid = db.Column(db.String(), primary_key=True)
+    savedAt = db.Column(db.String())
+    savedXml = db.Column(db.String())
+    def __init__(self, pid, uid, savedAt, savedXML):
+        self.pid = pid
+        self.uid = uid
+        self.savedAt = savedAt
+        self.savedXML = savedXML
+
+
+# class SubSolution(db.Model):
+#     __tablename__: "SubSolution"
+#     sid = db.column(db.BigInteger())
+#     pid = db.column(db.BigInteger(), ForeignKey('Problem.pid'))
+#     # uid = db.column(db.BigInteger())
+#     sourceCode = db.column(db.String())
+#     problem = relationship("Problem", backref = backref("subAt", order_by = sid))
+#
+#     def __init__(self, sid, pid, subAt, sourceCode):
+#         self.sid = sid
+#         self.pid = pid
+#         # self.uid = uid
+#         self.savedAt = subAt
+#         self.sourceCode =sourceCode
+#
+# class Testcase(db.Model):
+#     __tablename__: "Testcase"
+#     tid = db.column(db.BigInteger(), primary_key=True)
+#     pid = db.column(db.BigInteger())
+#     input = db.column(db.String())
+#     output = db.column(db.String())
+#     def __init__(self, tid, pid, input, output):
+#         self.tid = tid
+#         self.pid = pid
+#         self.input = input
+#         self.output = output
+#
+# class Testresult(db.Model):
+#     __tablename__: "Testresult"
+#     rid = db.column(db.BigInteger(), primary_key=True)
+#     tid = db.column(db.BigInteger())
+#     sid = db.column(db.BigInteger())
+#     result = db.column(db.String())
+#
+#     def __init__(self, rid, tid, sid, result):
+#         self.rid = rid
+#         self.tid = tid
+#         self.sid = sid
+#         self.result = result
+
+# 메인화면
+@app.route('/')
+def hello_world():
+
+    return jsonify(greeting = '')
+
 
 
 @app.route('/problems', methods=['GET', 'OPTIONS'])
@@ -67,12 +124,12 @@ def view_problems():
         return jsonify(data = json.loads(problemInAll.to_json(orient='records')))
 
 testcase =   [
-              {'tid': 1, 'pid': 1000, 'input': 'a=2\nb=3', 'output': '5'},
-              {'tid': 2, 'pid': 1000, 'input': 'a=3\nb=5', 'output': '8'},
-              {'tid': 3, 'pid': 1000, 'input': 'a=7\nb=9', 'output': '16'},
-              {'tid': 4, 'pid': 1000, 'input': 'a=3\nb=2', 'output': '1'},
-              {'tid': 5, 'pid': 1001, 'input': 'a=5\nb=3', 'output': '2'},
-              {'tid': 6, 'pid': 1001, 'input': 'a=7\nb=2', 'output': '5'},
+              {'tid': 1, 'pid': 1000, 'input': '2 3', 'output': '5'},
+              {'tid': 2, 'pid': 1000, 'input': '3 5', 'output': '8'},
+              {'tid': 3, 'pid': 1000, 'input': '7 9', 'output': '16'},
+              {'tid': 4, 'pid': 1000, 'input': '3 2', 'output': '1'},
+              {'tid': 5, 'pid': 1001, 'input': '5 3', 'output': '2'},
+              {'tid': 6, 'pid': 1001, 'input': '7 2', 'output': '5'},
               {'tid': 7, 'pid': 1002, 'input': '(()[[]])([])', 'output': '28'}
               ]
 
@@ -96,9 +153,9 @@ def view_each_problem(pid=''):
                 else:
                     break
         data[0]["example"] = tc
-        return jsonify(data = data[0], result = True)
+        return jsonify(data = data[0], result = 200)
     else :
-        return jsonify(result = False, err_msg = "Not found")
+        return jsonify(result = 404, err_msg = "Not found")
 
 #임시저장
 int_pid = 1000
@@ -128,7 +185,7 @@ def save_sol():
                 return jsonify(result = True, msg="Successful to save solution.")
 
             # 한번도 저장된 solution이 아닐 때
-            else:
+            else :
                 # if queryByPid.count():
                 app.svsol.append(mysav)
                 app.svsol = sorted(app.svsol, key=itemgetter('pid'))
@@ -144,46 +201,50 @@ def save_sol():
             # problemByPid = pd.read_sql(queryByPid.statement, queryByPid.session.bind)
             # return jsonify(data=json.loads(problemByPid.to_json(orient='records')), result=200)
             a = [dict for dict in app.svsol if dict["pid"] == pid and dict["uid"] == uid]
-            return jsonify(data = a[0], result = True)
+            return jsonify(data = a[0], result = 200)
         else:
-            return jsonify(result=False, err_msg="Not found")
+            return jsonify(result=404, err_msg="Not found")
 
 #제출-post
+# mysub = {'pid': 1000, 'subAt': 1570827639, 'subXML': '<init></init>', 'sourceCode': 'A, B = map(int,input().split())\nprint(A+B)'}
 app.sid_count = 4
-app.subsol = [{'sid': 1, 'pid': 1004, 'uid': 1, 'subAt': 1580505217, 'title': '최대자리곱', 'category': '카테고리3', 'creator': '강하민', 'subXML': '<xml></xml>', 'source': ''},
-            {'sid': 2, 'pid': 1004,'uid': 1, 'subAt': 1580405217, 'title': '최대자리곱', 'category': '카테고리3', 'creator': '강하민', 'subXML': '<xml></xml>', 'source': ''},
-            {'sid': 3, 'pid':1001, 'uid': 1, 'subAt': 1580605217, 'title': 'A-B', 'category': '카테고리1', 'creator': '기쁜 국수', 'subXML': '<xml></xml>', 'source': ''},
-            {'sid': 4, 'pid': 1000, 'uid': 1, 'subAt': 1580805217, 'title': 'A+B', 'category': '카테고리1', 'creator': '기쁜 국수', 'subXML': '<xml></xml>', 'source': ''}]
-testresult = [{'sid': 1, 'tid': 30, 'result': True},
-              {'sid': 1, 'tid': 31, 'result': True},
-              {'sid': 1, 'tid': 32, 'result': True},
-              {'sid': 1, 'tid': 33, 'result': True},
-              {'sid': 1, 'tid': 34, 'result': True},
-              {'sid': 1, 'tid': 35, 'result': True},
-              {'sid': 1, 'tid': 36, 'result': True},
-              {'sid': 1, 'tid': 37, 'result': True},
-              {'sid': 1, 'tid': 38, 'result': True},
-              {'sid': 1, 'tid': 39, 'result': False},
-              {'sid': 2, 'tid': 30, 'result': True},
-              {'sid': 2, 'tid': 31, 'result': True},
-              {'sid': 2, 'tid': 32, 'result': True},
-              {'sid': 2, 'tid': 33, 'result': True},
-              {'sid': 2, 'tid': 34, 'result': True},
-              {'sid': 2, 'tid': 35, 'result': True},
-              {'sid': 2, 'tid': 36, 'result': True},
-              {'sid': 2, 'tid': 37, 'result': True},
-              {'sid': 2, 'tid': 38, 'result': True},
-              {'sid': 2, 'tid': 39, 'result': True},
-              {'sid': 3, 'tid': 6, 'result': True},
-              {'sid': 3, 'tid': 7, 'result': True},
-              {'sid': 3, 'tid': 8, 'result': True},
-              {'sid': 3, 'tid': 9, 'result': True},
-              {'sid': 3, 'tid': 10, 'result': True},
-              {'sid': 4, 'tid': 1, 'result': True},
-              {'sid': 4, 'tid': 2, 'result': True},
-              {'sid': 4, 'tid': 3, 'result': True},
-              {'sid': 4, 'tid': 4, 'result': True},
-              {'sid': 4, 'tid': 5, 'result': False}
+# app.subsol = [{'pid': 1001,'subAt': 1570705217, 'subXML':'<init></init>', 'sourceCode': 'A, B = map(int,input().split())\nprint(A+B)'},
+#               {'pid': 1001,'subAt': 1570805217, 'subXML':'<init></init>', 'sourceCode': 'A, B = map(int,input().split())\nprint(A-B)'},
+#                 {'pid': 1002,'subAt': 1570605217, 'subXML':'<init></init>', 'sourceCode': 'A, B = map(int,input().split())\nprint(A+B)'}]
+app.subsol = [{'sid': 1, 'pid': 1004, 'uid': 1, 'title': '최대자리곱', 'category': '카테고리3', 'creator': '강하민', 'subXML': '<xml></xml>', 'source': ''},
+            {'sid': 2, 'pid': 1004,'uid': 1, 'title': '최대자리곱', 'category': '카테고리3', 'creator': '강하민', 'subXML': '<xml></xml>', 'source': ''},
+            {'sid': 3, 'pid':1001, 'uid': 1, 'title': 'A-B', 'category': '카테고리1', 'creator': '기쁜 국수', 'subXML': '<xml></xml>', 'source': ''},
+            {'sid': 4, 'pid': 1000, 'uid': 1, 'title': 'A+B', 'category': '카테고리1', 'creator': '기쁜 국수', 'subXML': '<xml></xml>', 'source': ''}]
+testresult = [{'sid': 1, 'tid': 30, 'result': '성공'},
+              {'sid': 1, 'tid': 31, 'result': '성공'},
+              {'sid': 1, 'tid': 32, 'result': '성공'},
+              {'sid': 1, 'tid': 33, 'result': '성공'},
+              {'sid': 1, 'tid': 34, 'result': '성공'},
+              {'sid': 1, 'tid': 35, 'result': '성공'},
+              {'sid': 1, 'tid': 36, 'result': '성공'},
+              {'sid': 1, 'tid': 37, 'result': '성공'},
+              {'sid': 1, 'tid': 38, 'result': '성공'},
+              {'sid': 1, 'tid': 39, 'result': '실패'},
+              {'sid': 2, 'tid': 30, 'result': '성공'},
+              {'sid': 2, 'tid': 31, 'result': '성공'},
+              {'sid': 2, 'tid': 32, 'result': '성공'},
+              {'sid': 2, 'tid': 33, 'result': '성공'},
+              {'sid': 2, 'tid': 34, 'result': '성공'},
+              {'sid': 2, 'tid': 35, 'result': '성공'},
+              {'sid': 2, 'tid': 36, 'result': '성공'},
+              {'sid': 2, 'tid': 37, 'result': '성공'},
+              {'sid': 2, 'tid': 38, 'result': '성공'},
+              {'sid': 2, 'tid': 39, 'result': '성공'},
+              {'sid': 3, 'tid': 6, 'result': '성공'},
+              {'sid': 3, 'tid': 7, 'result': '성공'},
+              {'sid': 3, 'tid': 8, 'result': '성공'},
+              {'sid': 3, 'tid': 9, 'result': '성공'},
+              {'sid': 3, 'tid': 10, 'result': '성공'},
+              {'sid': 4, 'tid': 1, 'result': '성공'},
+              {'sid': 4, 'tid': 2, 'result': '성공'},
+              {'sid': 4, 'tid': 3, 'result': '성공'},
+              {'sid': 4, 'tid': 4, 'result': '성공'},
+              {'sid': 4, 'tid': 5, 'result': '실패'}
               ]
 @app.route('/submit', methods=['POST', 'GET'])
 def sub_sol():
@@ -198,7 +259,7 @@ def sub_sol():
             app.subsol.append(mysub)
             # app.subsol = sorted(app.subsol, key=itemgetter('pid'))
             print(app.subsol)
-            return jsonify(result=True, sid=sid, msg="Successful to submit solution.")
+            return jsonify(result=True, msg="Successful to submit solution.")
         except KeyError as e:
             return jsonify(result=False, err_msg="Check your key")
 
@@ -206,7 +267,7 @@ def sub_sol():
         sid = int(request.args.get('sid'))
         if sid in map(itemgetter('sid'), app.subsol):
             a = [dict for dict in app.subsol if dict["sid"] == sid]
-            return jsonify(data=a[0], result=True)
+            return jsonify(data=a[0], result=200)
 
 
 @app.route('/status/<uid>', methods=['GET'])
@@ -219,7 +280,7 @@ def view_my_status(uid):
             for item in app.subsol:
                 if item['uid'] == int(uid) and item['category'] == category:
                     usersub.append(item)
-                    print(item)
+                    print(usersub)
             usersub = addTestResult(usersub)
         # query parameter가 없을 때
         else:
@@ -234,22 +295,17 @@ def view_my_status(uid):
 def addTestResult(arr):
     tr = []
     for item in arr:
-        tmpsid = int(item['sid'])
-        print(testresult)
+        tmpsid = item['sid']
         for result in testresult:
-            print(result)
-            if int(result['sid']) == int(tmpsid):
+            if result['sid'] == tmpsid:
                 tmp = result.copy()
                 del tmp['sid']
                 tr.append(tmp)
-                print(tr)
             else:
                 break
-        # print(tr)
         item["testresult"] = tr
-        # print(item)
     return arr
 
 
-if __name__ == '__main__':
-    app.run()
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port="5000", debug = True)
