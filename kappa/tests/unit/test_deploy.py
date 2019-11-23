@@ -12,7 +12,7 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-import unittest
+import unitTest
 import os
 import shutil
 
@@ -23,7 +23,7 @@ import kappa.context
 import kappa.awsclient
 
 
-class TestLog(unittest.TestCase):
+class TestLog(unitTest.TestCase):
 
     def setUp(self):
         self.environ = {}
