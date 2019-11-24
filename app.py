@@ -97,13 +97,15 @@ class TestResult(db.Model):
     id = db.Column(db.BigInteger, primary_key= True, autoincrement= True, nullable= False)
     tid = db.Column(db.BigInteger, db.ForeignKey('TestCase.id'), nullable= False)
     sid = db.Column(db.BigInteger, db.ForeignKey('UserSolution.id'), nullable= False)
+    scoredAt = db.Column(db.Integer, nullable=False)
     result = db.Column(db.String, nullable= False)
 
-    def __init__(self, id, tid, sid, result):
+    def __init__(self, id, tid, sid, result, scoredAt):
         self.id = id
         self.tid = tid
         self.sid = sid
         self.result = result
+        self.scoredAt = scoredAt
 
 class UserSolution(db.Model):
     __tablename__ = "UserSolution"
@@ -128,8 +130,6 @@ class UserSolution(db.Model):
         self.xml = xml
 
 
-
-
 @app.route('/problems', methods=['GET', 'OPTIONS'])
 def view_problems():
     category = request.args.get('category')
@@ -145,6 +145,7 @@ def view_problems():
         queryInAll = Problem.query.filter(Problem.pid > 0)
         problemInAll = pd.read_sql(queryInAll.statement, queryInAll.session.bind)
         return jsonify(data = json.loads(problemInAll.to_json(orient='records')))
+
 
 @app.route('/problems/<pid>', methods=['GET', 'OPTIONS'])
 def view_each_problem(pid=''):
@@ -176,7 +177,6 @@ def view_each_problem(pid=''):
 int_pid = 1000
 
 app.aid_count = 1
-
 app.svsol = [{'pid': 1001, 'uid': 1, 'savedAt': 1570805217, 'savedXML':'<xml><block type="text_print" x="30" y="90"><value name="TEXT"><block type="text"><field name="TEXT">abc</field></block></value></block></xml>'},
                 {'pid': 1002, 'uid': 1, 'savedAt': 1570805217, 'savedXML':'<xml></xml>'},
                   {'pid': 1003, 'uid': 1, 'savedAt': 1570805217, 'savedXML':'<xml></xml>'}]
@@ -184,27 +184,32 @@ app.svsol = [{'pid': 1001, 'uid': 1, 'savedAt': 1570805217, 'savedXML':'<xml><bl
 def on_json_loading_failed_return_dict(e):
     return jsonify(result = False)
 
+app.usersol_id = 1;
 @app.route('/save', methods=['POST', 'GET'])
 def save_sol():
     if request.method == 'POST':
         request.on_json_loading_failed = on_json_loading_failed_return_dict
-        mysav = request.get_json(force=True)
-        #queryByPid = SavedSol.query.filter(Problem.pid == pid)
-        # if uid in map(itemgetter('uid'), app.svsol) and pid in map(itemgetter('pid'), app.svsol):
+        postedSol = request.get_json(force=True)
+        print(postedSol)
+        tempSol = postedSol.copy()
+        print(tempSol)
         try:
+            userSol = UserSolution.query.filter_by(pid=postedSol['pid']).first()
+            print()
             # 한번 저장된 solution일 때
-            if mysav['pid'] in map(itemgetter('pid'), app.svsol):
-                cidx = [i for i,_ in enumerate(app.svsol) if _['pid'] == mysav['pid']][0]
-                app.svsol[cidx] = mysav
-                app.svsol = sorted(app.svsol, key=itemgetter('pid'))
+            if userSol != None:
+                userSol.data = {'updatedAt': postedSol['postedAt']}
+                userSol.data = {'xml': postedSol['xml']}
+                print(userSol)
+                db.session.commit()
                 return jsonify(result = True, msg="Successful to save solution.")
-
             # 한번도 저장된 solution이 아닐 때
             else :
-                # if queryByPid.count():
-                app.svsol.append(mysav)
-                app.svsol = sorted(app.svsol, key=itemgetter('pid'))
-                print(app.svsol)
+                userSol = UserSolution(app.usersol_id, postedSol['uid'], postedSol['pid'], postedSol['postedAt'], None, None, postedSol['xml'])
+                app.usersol_id += 1
+                print('new', userSol)
+                db.session.add(userSol)
+                db.session.commit()
                 return jsonify(result = True, msg="Successful to create solution.")
         except:
             return jsonify(result=False, err_msg="Check your key")
@@ -212,13 +217,15 @@ def save_sol():
     elif request.method == 'GET':
         uid = int(request.args.get('uid'))
         pid = int(request.args.get('pid'))
-        if uid in map(itemgetter('uid'), app.svsol) and pid in map(itemgetter('pid'), app.svsol):
-            # problemByPid = pd.read_sql(queryByPid.statement, queryByPid.session.bind)
-            # return jsonify(data=json.loads(problemByPid.to_json(orient='records')), result=200)
-            a = [dict for dict in app.svsol if dict["pid"] == pid and dict["uid"] == uid]
-            return jsonify(data = a[0], result = 200)
+        userSolQuery = UserSolution.query.filter(UserSolution.pid == pid and UserSolution.id == uid)
+        userSolByPid = pd.read_sql(userSolQuery.statement, userSolQuery.session.bind)
+        userSols = json.loads(userSolByPid.to_json(orient='records'))
+
+        # 한번 저장된 solution일 때
+        if len(userSols) != 0:
+            return jsonify(data = userSols, result = True)
         else:
-            return jsonify(result=404, err_msg="Not found")
+            return jsonify(result=False, err_msg="Not found")
 
 #제출-post
 # mysub = {'pid': 1000, 'subAt': 1570827639, 'subXML': '<init></init>', 'sourceCode': 'A, B = map(int,input().split())\nprint(A+B)'}
