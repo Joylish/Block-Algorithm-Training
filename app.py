@@ -53,14 +53,14 @@ class Example(db.Model):
     __tablename__ = "Example"
     id = db.Column(db.BigInteger, primary_key= True, autoincrement= True, nullable= False)
     pid = db.Column(db.ForeignKey('Problem.id'), nullable= False)
-    inputExample = db.Column(db.Text, nullable= False)
-    outputExample = db.Column(db.Text, nullable= False)
+    input = db.Column(db.Text, nullable= False)
+    output = db.Column(db.Text, nullable= False)
 
-    def __init__(self, id, pid, inputExample, outputExample):
+    def __init__(self, id, pid, input, output):
         self.id = id
         self.pid = pid
-        self.inputExample = inputExample
-        self.outputExample = outputExample
+        self.input = input
+        self.output = output
 
 class User(db.Model):
     __tablename__ = "User"
