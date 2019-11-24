@@ -146,39 +146,31 @@ def view_problems():
         problemInAll = pd.read_sql(queryInAll.statement, queryInAll.session.bind)
         return jsonify(data = json.loads(problemInAll.to_json(orient='records')))
 
-testcase =   [
-              {'tid': 1, 'pid': 1000, 'input': '2 3', 'output': '5'},
-              {'tid': 2, 'pid': 1000, 'input': '3 5', 'output': '8'},
-              {'tid': 3, 'pid': 1000, 'input': '7 9', 'output': '16'},
-              {'tid': 4, 'pid': 1000, 'input': '3 2', 'output': '1'},
-              {'tid': 5, 'pid': 1001, 'input': '5 3', 'output': '2'},
-              {'tid': 6, 'pid': 1001, 'input': '7 2', 'output': '5'},
-              {'tid': 7, 'pid': 1002, 'input': '(()[[]])([])', 'output': '28'}
-              ]
-
 @app.route('/problems/<pid>', methods=['GET', 'OPTIONS'])
 def view_each_problem(pid=''):
-    int_pid = int(pid)
     tc = []
-    tcCnt = 0
-    queryByPid = Problem.query.filter(Problem.pid == pid)
-    if queryByPid.count():
-        problemByPid = pd.read_sql(queryByPid.statement,queryByPid.session.bind)
-        data = json.loads(problemByPid.to_json(orient='records'))
-        for item in testcase:
-            if item['pid'] == int_pid:
-                if tcCnt < 3:
-                    tcCnt += 1
-                    tmp = item.copy()
-                    del tmp['tid']
-                    del tmp['pid']
-                    tc.append(tmp)
-                else:
-                    break
-        data[0]["example"] = tc
-        return jsonify(data = data[0], result = 200)
+    problemQuery = Problem.query.filter(Problem.id == pid)
+    if problemQuery.count():
+        problemByPid = pd.read_sql(problemQuery.statement, problemQuery.session.bind)
+        problem = json.loads(problemByPid.to_json(orient='records'))
+
+        exampleQuery = Example.query.filter(Example.pid == int(pid))
+        exampleByPid = pd.read_sql(exampleQuery.statement, exampleQuery.session.bind)
+        examples = json.loads(exampleByPid.to_json(orient='records'))
+        print(examples)
+        for item in examples:
+            print(item)
+            if item['pid'] == int(pid):
+                tmp = item.copy()
+                del tmp['id']
+                del tmp['pid']
+                tc.append(tmp)
+            else:
+                break
+        problem[0]["examples"] = tc
+        return jsonify(data = problem[0], result = True)
     else :
-        return jsonify(result = 404, err_msg = "Not found")
+        return jsonify(result = False, err_msg = "Not found")
 
 #임시저장
 int_pid = 1000
