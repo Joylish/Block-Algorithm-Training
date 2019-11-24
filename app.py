@@ -18,27 +18,30 @@ db = SQLAlchemy(app)
 
 class Problem(db.Model):
     __tablename__ = "Problem"
-    pid = db.Column(db.BigInteger(), primary_key=True)
-    title = db.Column(db.String(), unique=True)
-    createdAt = db.Column(db.BigInteger())
-    creator = db.Column(db.String(256))
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement= True, nullable= False)
+    title = db.Column(db.String, nullable= False)
+    createdAt = db.Column(db.Integer, nullable= False)
+    creator = db.Column(db.String(256), nullable= False)
     category = db.Column(db.String(256))
-    content = db.Column(db.String())
-    inputDetail = db.Column(db.String())
-    outputDetail = db.Column(db.String())
-    numSub = db.Column(db.Integer())
-    correctRate = db.Column(db.REAL())
-    initXML = db.Column(db.String())
+    content = db.Column(db.Text, nullable= False)
+    inputDetail = db.Column(db.Text, nullable= False)
+    outputDetail = db.Column(db.Text, nullable= False)
+    numSub = db.Column(db.Integer)
+    correctRate = db.Column(db.Float)
+    initXML = db.Column(db.Text)
 
+    example = db.relationship('Example', backref='Problem', cascade='all, delete, delete-orphan')
+    userSolution = db.relationship('UserSolution', backref='Problem', cascade='all, delete, delete-orphan')
+    testCase = db.relationship('TestCase', backref='Problem', cascade='all, delete, delete-orphan')
 
-    def __init__(self, pid, title, createdAt, creator,
+    def __init__(self, id, title, createdAt, creator,
                  category, content, inputDetail, outputDetail,
                  numSub, correctRate, initXML):
-        self.pid = pid
+        self.id = id
+        self.title = title
         self.createdAt = createdAt
         self.creator = creator
         self.category = category
-        self.title = title
         self.content = content
         self.inputDetail = inputDetail
         self.outputDetail = outputDetail
@@ -46,64 +49,84 @@ class Problem(db.Model):
         self.correctRate = correctRate
         self.initXML = initXML
 
-class SavedSolution(db.Model):
-    __tablename__ = "SavedSolution"
-    pid = db.Column(db.BigInteger(),primary_key=True)
-    uid = db.Column(db.String(), primary_key=True)
-    savedAt = db.Column(db.String())
-    savedXml = db.Column(db.String())
-    def __init__(self, pid, uid, savedAt, savedXML):
+class Example(db.Model):
+    __tablename__ = "Example"
+    id = db.Column(db.BigInteger, primary_key= True, autoincrement= True, nullable= False)
+    pid = db.Column(db.ForeignKey('Problem.id'), nullable= False)
+    inputExample = db.Column(db.Text, nullable= False)
+    outputExample = db.Column(db.Text, nullable= False)
+
+    def __init__(self, id, pid, inputExample, outputExample):
+        self.id = id
         self.pid = pid
+        self.inputExample = inputExample
+        self.outputExample = outputExample
+
+class User(db.Model):
+    __tablename__ = "User"
+    id = db.Column(db.BigInteger, primary_key= True, autoincrement= True, nullable= False)
+    name = db.Column(db.String, nullable= False)
+    createdAt = db.Column(db.Integer, nullable= False)
+    email = db.Column(db.String, nullable= False)
+
+    userSolution = db.relationship('UserSolution', backref='User', cascade='all, delete, delete-orphan')
+
+    def __init__(self, id, name, createdAt, email):
+        self.id = id
+        self.name = name
+        self.createdAt = createdAt
+        self.email = email
+
+class TestCase(db.Model):
+    __tablename__ = "TestCase"
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True, nullable=False)
+    pid = db.Column(db.BigInteger, db.ForeignKey('Problem.id'), nullable= False)
+    input = db.Column(db.Text, nullable= False)
+    output = db.Column(db.Text, nullable= False)
+
+    testResult = db.relationship('TestResult', backref='TestCase', cascade='all, delete, delete-orphan')
+
+    def __init__(self, id, pid, input, output):
+        self.id = id
+        self.pid = pid
+        self.input = input
+        self.output = output
+
+class TestResult(db.Model):
+    __tablename__ = "TestResult"
+    id = db.Column(db.BigInteger, primary_key= True, autoincrement= True, nullable= False)
+    tid = db.Column(db.BigInteger, db.ForeignKey('TestCase.id'), nullable= False)
+    sid = db.Column(db.BigInteger, db.ForeignKey('UserSolution.id'), nullable= False)
+    result = db.Column(db.String, nullable= False)
+
+    def __init__(self, id, tid, sid, result):
+        self.id = id
+        self.tid = tid
+        self.sid = sid
+        self.result = result
+
+class UserSolution(db.Model):
+    __tablename__ = "UserSolution"
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement= True, nullable= False)
+    uid = db.Column(db.BigInteger, db.ForeignKey('User.id'), nullable= False)
+    pid = db.Column(db.BigInteger, db.ForeignKey('Problem.id'), nullable= False)
+    createdAt = db.Column(db.Integer, nullable= False)
+    updatedAt = db.Column(db.Integer)
+    submittedAt = db.Column(db.Integer)
+    sourceCode = db.Column(db.String)
+    xml = db.Column(db.String)
+
+    testResult = db.relationship('TestResult', backref='UserSolution', cascade='all, delete, delete-orphan')
+
+    def __init__(self, id, uid, pid, createdAt, updatedAt, submittedAt, xml):
+        self.id = id
         self.uid = uid
-        self.savedAt = savedAt
-        self.savedXML = savedXML
+        self.pid = pid
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.submittedAt = submittedAt
+        self.xml = xml
 
-
-# class SubSolution(db.Model):
-#     __tablename__: "SubSolution"
-#     sid = db.column(db.BigInteger())
-#     pid = db.column(db.BigInteger(), ForeignKey('Problem.pid'))
-#     # uid = db.column(db.BigInteger())
-#     sourceCode = db.column(db.String())
-#     problem = relationship("Problem", backref = backref("subAt", order_by = sid))
-#
-#     def __init__(self, sid, pid, subAt, sourceCode):
-#         self.sid = sid
-#         self.pid = pid
-#         # self.uid = uid
-#         self.savedAt = subAt
-#         self.sourceCode =sourceCode
-#
-# class Testcase(db.Model):
-#     __tablename__: "Testcase"
-#     tid = db.column(db.BigInteger(), primary_key=True)
-#     pid = db.column(db.BigInteger())
-#     input = db.column(db.String())
-#     output = db.column(db.String())
-#     def __init__(self, tid, pid, input, output):
-#         self.tid = tid
-#         self.pid = pid
-#         self.input = input
-#         self.output = output
-#
-# class Testresult(db.Model):
-#     __tablename__: "Testresult"
-#     rid = db.column(db.BigInteger(), primary_key=True)
-#     tid = db.column(db.BigInteger())
-#     sid = db.column(db.BigInteger())
-#     result = db.column(db.String())
-#
-#     def __init__(self, rid, tid, sid, result):
-#         self.rid = rid
-#         self.tid = tid
-#         self.sid = sid
-#         self.result = result
-
-# 메인화면
-@app.route('/')
-def hello_world():
-
-    return jsonify(greeting = '')
 
 
 
