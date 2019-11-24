@@ -215,7 +215,7 @@ def save_sol():
     elif request.method == 'GET':
         uid = int(request.args.get('uid'))
         pid = int(request.args.get('pid'))
-        userSolQuery = UserSolution.query.filter(UserSolution.pid == pid and UserSolution.id == uid)
+        userSolQuery = UserSolution.query.filter(UserSolution.pid == pid and UserSolution.id == uid).filter(UserSolution.submittedAt == None)
         userSolByPid = pd.read_sql(userSolQuery.statement, userSolQuery.session.bind)
         userSols = json.loads(userSolByPid.to_json(orient='records'))
 
