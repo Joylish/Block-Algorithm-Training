@@ -190,24 +190,22 @@ def save_sol():
     if request.method == 'POST':
         request.on_json_loading_failed = on_json_loading_failed_return_dict
         postedSol = request.get_json(force=True)
-        print(postedSol)
         tempSol = postedSol.copy()
-        print(tempSol)
+
         try:
-            userSol = UserSolution.query.filter_by(pid=postedSol['pid']).first()
-            print()
+            userSol = UserSolution.query.filter(UserSolution.pid==postedSol['pid'] and UserSolution.submittedAt == None).first()
+
             # 한번 저장된 solution일 때
             if userSol != None:
-                userSol.data = {'updatedAt': postedSol['postedAt']}
-                userSol.data = {'xml': postedSol['xml']}
-                print(userSol)
+                userSol.updatedAt = postedSol['postedAt']
+                userSol.xml = postedSol['xml']
+
                 db.session.commit()
                 return jsonify(result = True, msg="Successful to save solution.")
             # 한번도 저장된 solution이 아닐 때
             else :
                 userSol = UserSolution(app.usersol_id, postedSol['uid'], postedSol['pid'], postedSol['postedAt'], None, None, postedSol['xml'])
                 app.usersol_id += 1
-                print('new', userSol)
                 db.session.add(userSol)
                 db.session.commit()
                 return jsonify(result = True, msg="Successful to create solution.")
