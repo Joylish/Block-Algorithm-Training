@@ -1,5 +1,6 @@
 
 # -*- coding: utf-8 -*-
+import time
 from operator import itemgetter
 from flask import Flask, request, jsonify
 import json
@@ -7,6 +8,7 @@ import json
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
+import sys
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -199,7 +201,6 @@ def save_sol():
             if userSol != None:
                 userSol.updatedAt = postedSol['postedAt']
                 userSol.xml = postedSol['xml']
-
                 db.session.commit()
                 return jsonify(result = True, msg="Successful to save solution.")
             # 한번도 저장된 solution이 아닐 때
@@ -225,69 +226,69 @@ def save_sol():
         else:
             return jsonify(result=False, err_msg="Not found")
 
-#제출-post
-# mysub = {'pid': 1000, 'subAt': 1570827639, 'subXML': '<init></init>', 'sourceCode': 'A, B = map(int,input().split())\nprint(A+B)'}
-app.sid_count = 4
-# app.subsol = [{'pid': 1001,'subAt': 1570705217, 'subXML':'<init></init>', 'sourceCode': 'A, B = map(int,input().split())\nprint(A+B)'},
-#               {'pid': 1001,'subAt': 1570805217, 'subXML':'<init></init>', 'sourceCode': 'A, B = map(int,input().split())\nprint(A-B)'},
-#                 {'pid': 1002,'subAt': 1570605217, 'subXML':'<init></init>', 'sourceCode': 'A, B = map(int,input().split())\nprint(A+B)'}]
-app.subsol = [{'sid': 1, 'pid': 1004, 'uid': 1, 'title': '최대자리곱', 'category': '카테고리3', 'creator': '강하민', 'subXML': '<xml></xml>', 'source': ''},
-            {'sid': 2, 'pid': 1004,'uid': 1, 'title': '최대자리곱', 'category': '카테고리3', 'creator': '강하민', 'subXML': '<xml></xml>', 'source': ''},
-            {'sid': 3, 'pid':1001, 'uid': 1, 'title': 'A-B', 'category': '카테고리1', 'creator': '기쁜 국수', 'subXML': '<xml></xml>', 'source': ''},
-            {'sid': 4, 'pid': 1000, 'uid': 1, 'title': 'A+B', 'category': '카테고리1', 'creator': '기쁜 국수', 'subXML': '<xml></xml>', 'source': ''}]
-testresult = [{'sid': 1, 'tid': 30, 'result': '성공'},
-              {'sid': 1, 'tid': 31, 'result': '성공'},
-              {'sid': 1, 'tid': 32, 'result': '성공'},
-              {'sid': 1, 'tid': 33, 'result': '성공'},
-              {'sid': 1, 'tid': 34, 'result': '성공'},
-              {'sid': 1, 'tid': 35, 'result': '성공'},
-              {'sid': 1, 'tid': 36, 'result': '성공'},
-              {'sid': 1, 'tid': 37, 'result': '성공'},
-              {'sid': 1, 'tid': 38, 'result': '성공'},
-              {'sid': 1, 'tid': 39, 'result': '실패'},
-              {'sid': 2, 'tid': 30, 'result': '성공'},
-              {'sid': 2, 'tid': 31, 'result': '성공'},
-              {'sid': 2, 'tid': 32, 'result': '성공'},
-              {'sid': 2, 'tid': 33, 'result': '성공'},
-              {'sid': 2, 'tid': 34, 'result': '성공'},
-              {'sid': 2, 'tid': 35, 'result': '성공'},
-              {'sid': 2, 'tid': 36, 'result': '성공'},
-              {'sid': 2, 'tid': 37, 'result': '성공'},
-              {'sid': 2, 'tid': 38, 'result': '성공'},
-              {'sid': 2, 'tid': 39, 'result': '성공'},
-              {'sid': 3, 'tid': 6, 'result': '성공'},
-              {'sid': 3, 'tid': 7, 'result': '성공'},
-              {'sid': 3, 'tid': 8, 'result': '성공'},
-              {'sid': 3, 'tid': 9, 'result': '성공'},
-              {'sid': 3, 'tid': 10, 'result': '성공'},
-              {'sid': 4, 'tid': 1, 'result': '성공'},
-              {'sid': 4, 'tid': 2, 'result': '성공'},
-              {'sid': 4, 'tid': 3, 'result': '성공'},
-              {'sid': 4, 'tid': 4, 'result': '성공'},
-              {'sid': 4, 'tid': 5, 'result': '실패'}
-              ]
+#제출
+app.testresult_id = 1;
+def testAndverify(subSol):
+    print('22222222222')
+    #UserSolution 테이블 update
+    sid = subSol['sid']
+    current_sub = UserSolution.query.filter(UserSolution.sid == sid and UserSolution.submittedAt != None).order_by(UserSolution.submittedAt.desc()).first()
+    current_sub.submittedAt = subSol['postedAt']
+    current_sub.xml = subSol['xml']
+    current_sub.sourceCode = subSol['sourceCode']
+    db.session.commit()
+
+    print('3333333333333')
+    pid = current_sub.pid
+    source = current_sub.sourceCode
+    testCase = TestCase.query.filter(TestCase.pid == pid).all()
+    out = open('result.txt', 'w+')
+    stdout = sys.stdout
+    sys.stdout = out
+    data = {}
+    allresults = []
+    accept = False
+    for i in range(len(testCase)):
+        print('4444444444')
+        input = testCase[i]['input']
+        # testCode 만들고 실행
+        testCode = input + '\n' + source
+        code = compile(testCode, 'text.txt', 'exec')
+        exec(testCode)
+        output = testCase[i]['output'] + '\n'
+        result = False
+        # 예상결과와 실제결과 비교
+        if out.read() == output :
+            result = True
+        else:
+            accept = False
+        testResult = TestResult(app.testresult_id, current_sub['sid'], testCase[i]['tid'],  int(round(time.time()*1000)), result)
+        allresults.append(testResult)
+        app.testresult_id += 1
+        db.session.add(testResult)
+        db.session.commit()
+    out.close()
+    sys.stdout = stdout
+    data['accept'] = accept
+    data['testResult'] = allresults
+    return data
+
 @app.route('/submit', methods=['POST', 'GET'])
-def sub_sol():
-    sid = 5;
+def submit_sol():
     if request.method == 'POST':
         request.on_json_loading_failed = on_json_loading_failed_return_dict
-        mysub = request.get_json(force=True)
-        mysub['sid'] = sid
-        sid += 1
-        print(mysub)
+        subsol = request.get_json(force=True)
         try:
-            app.subsol.append(mysub)
-            # app.subsol = sorted(app.subsol, key=itemgetter('pid'))
-            print(app.subsol)
-            return jsonify(result=True, msg="Successful to submit solution.")
+            data = testAndverify(subsol)
+            return jsonify(data = data, result=True, msg="Successful to submit solution.")
         except KeyError as e:
             return jsonify(result=False, err_msg="Check your key")
 
     if request.method == 'GET':
         sid = int(request.args.get('sid'))
-        if sid in map(itemgetter('sid'), app.subsol):
-            a = [dict for dict in app.subsol if dict["sid"] == sid]
-            return jsonify(data=a[0], result=200)
+        current_sub = UserSolution.query.filter(UserSolution.sid == sid).first()
+        if current_sub:
+            return jsonify(data= current_sub, result=True)
 
 
 @app.route('/status/<uid>', methods=['GET'])
