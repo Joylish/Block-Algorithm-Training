@@ -142,6 +142,7 @@ class UserSolution(db.Model):
         self.submittedAt = submittedAt
         self.xml = xml
         self.sourceCode = sourceCode
+        self.result = result
 
 
 @app.route('/problems', methods=['GET', 'OPTIONS'])
@@ -204,24 +205,28 @@ def save_sol():
     if request.method == 'POST':
         request.on_json_loading_failed = on_json_loading_failed_return_dict
         postedSol = request.get_json(force=True)
-        tempSol = postedSol.copy()
 
         try:
-            userSol = UserSolution.query.filter(UserSolution.pid==postedSol['pid'] and UserSolution.submittedAt == None).first()
+            userSol = UserSolution.query.filter(
+                UserSolution.pid == postedSol['pid'] and UserSolution.submittedAt.is_(None)).first()
 
             # 한번 저장된 solution일 때
             if userSol != None:
+                print('11111111')
                 userSol.updatedAt = postedSol['postedAt']
                 userSol.xml = postedSol['xml']
+
                 db.session.commit()
-                return jsonify(result = True, msg="Successful to save solution.")
+                return jsonify(result=True, msg="Successful to save solution.")
             # 한번도 저장된 solution이 아닐 때
-            else :
-                userSol = UserSolution(app.usersol_id, postedSol['uid'], postedSol['pid'], postedSol['postedAt'], None, None, postedSol['xml'], None)
+            else:
+                print('222222222222')
+                userSol = UserSolution(app.usersol_id, postedSol['uid'], postedSol['pid'], postedSol['postedAt'], None,
+                                       None, postedSol['xml'], None, None)
                 app.usersol_id += 1
                 db.session.add(userSol)
                 db.session.commit()
-                return jsonify(result = True, msg="Successful to create solution.")
+                return jsonify(result=True, msg="Successful to create solution.")
         except:
             return jsonify(result=False, err_msg="Check your key")
 
