@@ -10,6 +10,8 @@ from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
 import sys
 
+from sqlalchemy.orm import contains_eager
+
 app = Flask(__name__)
 cors = CORS(app)
 
@@ -129,11 +131,11 @@ class UserSolution(db.Model):
     submittedAt = db.Column(db.Integer)
     sourceCode = db.Column(db.String)
     xml = db.Column(db.String)
-    result = db.Column(db.Boolean)
+    accept = db.Column(db.Boolean)
 
     testResult = db.relationship('TestResult', backref='UserSolution', cascade='all, delete, delete-orphan')
 
-    def __init__(self, id, uid, pid, createdAt, updatedAt, submittedAt, xml, sourceCode, result):
+    def __init__(self, id, uid, pid, createdAt, updatedAt, submittedAt, xml, sourceCode, accept):
         self.id = id
         self.uid = uid
         self.pid = pid
@@ -142,8 +144,7 @@ class UserSolution(db.Model):
         self.submittedAt = submittedAt
         self.xml = xml
         self.sourceCode = sourceCode
-        self.result = result
-
+        self.accept = accept
 
 @app.route('/problems', methods=['GET', 'OPTIONS'])
 def view_problems():
@@ -310,7 +311,7 @@ def submit_sol():
                                        postedSol['postedAt'], postedSol['xml'], postedSol['sourceCode'], None)
                 data = testAndverify(subSol)
                 app.usersol_id += 1
-                subSol.result = data['accept']
+                subSol.accept = data['accept']
                 db.session.add(subSol)
                 db.session.commit()
                 return jsonify( data= data, result=True, msg="Successful to create and submit solution.")
@@ -320,46 +321,49 @@ def submit_sol():
 
     if request.method == 'GET':
         sid = int(request.args.get('sid'))
-        userSubSol = UserSolution.query.filter(UserSolution.sid == sid).first()
-        if userSubSol:
-            return jsonify(data= userSubSol, result=True)
+        userSolQuery = UserSolution.query.filter(UserSolution.id == sid)
+        userSolByPid = pd.read_sql(userSolQuery.statement, userSolQuery.session.bind)
+        userSols = json.loads(userSolByPid.to_json(orient='records'))
+        if len(userSols)>0:
+            return jsonify(data= userSols, result=True)
 
 
 @app.route('/status/<uid>', methods=['GET'])
-def view_my_status(uid):
+def view_my_status(uid=''):
     usersub = []
     category = request.args.get('category')
     try:
+        for u,t,p in db.session.query(UserSolution,TestResult,Problem).\
+                filter(UserSolution.pid==Problem.id).\
+                filter(TestResult.sid == UserSolution.id). \
+                filter(UserSolution.uid == int(uid)).\
+                filter(UserSolution.submittedAt.isnot(None)):
+            uu = pd.read_sql(u.statement, u.session.bind)
+            uuu = json.loads(uu.to_json(orient='records'))
+            tt = pd.read_sql(t.statement, t.session.bind)
+            ttt = json.loads(tt.to_json(orient='records'))
+            pp = pd.read_sql(p.statement, p.session.bind)
+            ppp = json.loads(pp.to_json(orient='records'))
+
+            print(uuu)
+            print(ttt)
+            print(ppp)
         # query parameter category에 정수값이 지정될 때
         if category:
-            for item in app.subsol:
-                if item['uid'] == int(uid) and item['category'] == category:
+            for item in usersub:
+                if item.uid == int(uid) and item.category == category:
                     usersub.append(item)
-                    print(usersub)
             usersub = addTestResult(usersub)
         # query parameter가 없을 때
         else:
-            for item in app.subsol:
-                if item['uid'] == int(uid):
+            for item in userSubSol:
+                if item.uid == int(uid):
                     usersub.append(item)
             usersub = addTestResult(usersub)
         return jsonify(result=True, data=usersub)
     except:
         return jsonify(result=False, err_msg="Bad request")
 
-def addTestResult(arr):
-    tr = []
-    for item in arr:
-        tmpsid = item['sid']
-        for result in testresult:
-            if result['sid'] == tmpsid:
-                tmp = result.copy()
-                del tmp['sid']
-                tr.append(tmp)
-            else:
-                break
-        item["testresult"] = tr
-    return arr
 
 
 if __name__ == "__main__":
