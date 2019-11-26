@@ -102,7 +102,7 @@ class TestResult(db.Model):
     scoredAt = db.Column(db.Integer, nullable=False)
     result = db.Column(db.String, nullable= False)
 
-    def __init__(self, id, tid, sid, result, scoredAt):
+    def __init__(self, id, sid, tid, scoredAt, result):
         self.id = id
         self.tid = tid
         self.sid = sid
@@ -122,7 +122,7 @@ class UserSolution(db.Model):
 
     testResult = db.relationship('TestResult', backref='UserSolution', cascade='all, delete, delete-orphan')
 
-    def __init__(self, id, uid, pid, createdAt, updatedAt, submittedAt, xml):
+    def __init__(self, id, uid, pid, createdAt, updatedAt, submittedAt, xml, sourceCode):
         self.id = id
         self.uid = uid
         self.pid = pid
@@ -130,6 +130,7 @@ class UserSolution(db.Model):
         self.updatedAt = updatedAt
         self.submittedAt = submittedAt
         self.xml = xml
+        self.sourceCode = sourceCode
 
 
 @app.route('/problems', methods=['GET', 'OPTIONS'])
@@ -205,7 +206,7 @@ def save_sol():
                 return jsonify(result = True, msg="Successful to save solution.")
             # 한번도 저장된 solution이 아닐 때
             else :
-                userSol = UserSolution(app.usersol_id, postedSol['uid'], postedSol['pid'], postedSol['postedAt'], None, None, postedSol['xml'])
+                userSol = UserSolution(app.usersol_id, postedSol['uid'], postedSol['pid'], postedSol['postedAt'], None, None, postedSol['xml'],None)
                 app.usersol_id += 1
                 db.session.add(userSol)
                 db.session.commit()
@@ -227,60 +228,83 @@ def save_sol():
             return jsonify(result=False, err_msg="Not found")
 
 #제출
+def json_default(value):
+    if isinstance(value, time.time()):
+        ret
 app.testresult_id = 1;
 def testAndverify(subSol):
-    print('22222222222')
-    #UserSolution 테이블 update
-    sid = subSol['sid']
-    current_sub = UserSolution.query.filter(UserSolution.sid == sid and UserSolution.submittedAt != None).order_by(UserSolution.submittedAt.desc()).first()
-    current_sub.submittedAt = subSol['postedAt']
-    current_sub.xml = subSol['xml']
-    current_sub.sourceCode = subSol['sourceCode']
-    db.session.commit()
 
-    print('3333333333333')
-    pid = current_sub.pid
-    source = current_sub.sourceCode
+    pid = subSol.pid
+    source = subSol.sourceCode
     testCase = TestCase.query.filter(TestCase.pid == pid).all()
-    out = open('result.txt', 'w+')
-    stdout = sys.stdout
-    sys.stdout = out
+
     data = {}
     allresults = []
     accept = False
     for i in range(len(testCase)):
-        print('4444444444')
-        input = testCase[i]['input']
+        out = open('result.txt', 'w+')
+        stdout = sys.stdout
+        sys.stdout = out
+        input = testCase[i].input
+
         # testCode 만들고 실행
         testCode = input + '\n' + source
         code = compile(testCode, 'text.txt', 'exec')
-        exec(testCode)
-        output = testCase[i]['output'] + '\n'
-        result = False
+        exec(code)
+
         # 예상결과와 실제결과 비교
+        output = testCase[i].output + '\n'
+        result = 0
+        out.seek(0,0)
         if out.read() == output :
-            result = True
+            result = 1
         else:
             accept = False
-        testResult = TestResult(app.testresult_id, current_sub['sid'], testCase[i]['tid'],  int(round(time.time()*1000)), result)
-        allresults.append(testResult)
+        testResult = TestResult(app.testresult_id, subSol.id, testCase[i].id,  int(round(time.time()*1000)), result)
+        allresults.append(json.loads((object, testResult)))
         app.testresult_id += 1
         db.session.add(testResult)
         db.session.commit()
-    out.close()
-    sys.stdout = stdout
+        out.close()
+        sys.stdout = stdout
+        print(json.loads(testResult))
+
     data['accept'] = accept
-    data['testResult'] = allresults
+    data['testResult']= allresults
+    print(data)
     return data
 
 @app.route('/submit', methods=['POST', 'GET'])
 def submit_sol():
     if request.method == 'POST':
         request.on_json_loading_failed = on_json_loading_failed_return_dict
-        subsol = request.get_json(force=True)
+        postedSol = request.get_json(force=True)
         try:
-            data = testAndverify(subsol)
-            return jsonify(data = data, result=True, msg="Successful to submit solution.")
+            subSol = UserSolution.query.filter(
+                UserSolution.pid == postedSol['pid'] and UserSolution.submittedAt == None).first()
+
+            # 한번 제출된 solution일 때
+            if subSol != None:
+                subSol.submittedAt = postedSol['postedAt']
+                subSol.xml = postedSol['xml']
+                subSol.sourceCode = postedSol['sourceCode']
+                db.session.commit()
+                data = testAndverify(subSol)
+                print('222222222')
+                return jsonify(data= data, result=True, msg="Successful to submit solution.")
+
+            # 한번도 제출된 solution이 아닐 때
+            else:
+                subSol = UserSolution(app.usersol_id, postedSol['uid'], postedSol['pid'], postedSol['postedAt'], None,
+                                       postedSol['postedAt'], postedSol['xml'], postedSol['sourceCode'])
+                print(subSol)
+                app.usersol_id += 1
+                db.session.add(subSol)
+                db.session.commit()
+                data = json.dumps(testAndverify(subSol))
+                print('222222222')
+                return jsonify(data= data, result=True, msg="Successful to create and submit solution.")
+
         except KeyError as e:
             return jsonify(result=False, err_msg="Check your key")
 
