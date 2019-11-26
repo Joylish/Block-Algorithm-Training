@@ -233,7 +233,7 @@ def save_sol():
     elif request.method == 'GET':
         uid = int(request.args.get('uid'))
         pid = int(request.args.get('pid'))
-        userSolQuery = UserSolution.query.filter(UserSolution.pid == pid and UserSolution.id == uid).filter(UserSolution.submittedAt == None)
+        userSolQuery = UserSolution.query.filter(UserSolution.pid == pid and UserSolution.uid == uid).filter(UserSolution.submittedAt == None)
         userSolByPid = pd.read_sql(userSolQuery.statement, userSolQuery.session.bind)
         userSols = json.loads(userSolByPid.to_json(orient='records'))
 
@@ -324,13 +324,14 @@ def submit_sol():
         if userSubSol:
             return jsonify(data= userSubSol, result=True)
 
+
 @app.route('/status/<uid>', methods=['GET'])
 def view_my_status(uid):
     usersub = []
     category = request.args.get('category')
     try:
         # query parameter category에 정수값이 지정될 때
-        if category != None:
+        if category:
             for item in app.subsol:
                 if item['uid'] == int(uid) and item['category'] == category:
                     usersub.append(item)
