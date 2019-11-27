@@ -53,6 +53,22 @@ class Problem(db.Model):
         self.correctRate = correctRate
         self.initXML = initXML
 
+    def to_json(self):
+        json = {
+            'id': self.id,
+            'title': self.title,
+            'createdAt': self.createdAt,
+            'creator': self.creator,
+            'category': self.category,
+            'content': self.content,
+            'inputDetail': self.inputDetail,
+            'outputDetail': self.outputDetail,
+            'numSub': self.correctRate,
+            'correctRate': self.correctRate,
+            'initXML': self.initXML
+        }
+        return json
+
 class Example(db.Model):
     __tablename__ = "Example"
     id = db.Column(db.BigInteger, primary_key= True, autoincrement= True, nullable= False)
@@ -146,22 +162,38 @@ class UserSolution(db.Model):
         self.sourceCode = sourceCode
         self.accept = accept
 
-@app.route('/problems/<int:page>', methods=['GET', 'OPTIONS'])
-def view_problems(page=1):
+@app.route('/problems', methods=['GET', 'OPTIONS'])
+def view_problems():
     per_page = 10
+    page = request.args.get('page')
     category = request.args.get('category')
     # query parameter category에 정수값이 지정될 때
-    if category:
-        queryByCategory = Problem.query.filter(Problem.category == category).order_by(Problem.createdAt.asc()).paginate(page, per_page, error_out=False)
-        problemsBindByCategory = pd.read_sql(queryByCategory.statement, queryByCategory.session.bind)
-        pdroblemsByCategory = json.loads(problemsBindByCategory.to_json(orient='records'))
-        return jsonify(data = problemsByCategory, result = True)
+    if page:
+        if category:
+            queryByCategory = Problem.query.filter(Problem.category == category).order_by(Problem.createdAt.asc()).paginate(int(page), per_page, error_out=False).items
+            problemsByCategory = []
+            for i in queryByCategory:
+                problemsByCategory.append(i.to_json())
+            return jsonify(data = problemsByCategory, result = True)
+        else:
+            # 모든 problem 불러오기
+            queryInAll = Problem.query.order_by(Problem.createdAt.asc()).paginate(int(page), per_page, error_out=False).items
+            problemsInAll = []
+            for i in queryInAll:
+                problemsInAll.append(i.to_json())
+            return jsonify(data = problemsInAll, result = True)
     else:
-        # 모든 problem 불러오기
-        queryInAll = Problem.query.filter(Problem.id > 0).order_by(Problem.createdAt.asc()).paginate(page, per_page, error_out=False)
-        problemsBindInAll = pd.read_sql(queryInAll.statement, queryInAll.session.bind)
-        problemsInAll = json.loads(problemsBindInAll.to_json(orient='records'))
-        return jsonify(data = problemsInAll, result = True)
+        if category:
+            queryByCategory = Problem.query.filter(Problem.category == category)
+            problemsBindByCategory = pd.read_sql(queryByCategory.statement, queryByCategory.session.bind)
+            problemsByCategory = json.loads(problemsBindByCategory.to_json(orient='records'))
+            return jsonify(data=problemsByCategory, result=True)
+        else:
+            # 모든 problem 불러오기
+            queryInAll = Problem.query.filter(Problem.id > 0)
+            problemsBindInAll = pd.read_sql(queryInAll.statement, queryInAll.session.bind)
+            problemsInAll = json.loads(problemsBindInAll.to_json(orient='records'))
+            return jsonify(data=problemsInAll, result=True)
 
 @app.route('/problems/<pid>', methods=['GET', 'OPTIONS'])
 def view_each_problem(pid=''):
@@ -212,7 +244,6 @@ def save_sol():
 
             # 한번 저장된 solution일 때
             if userSol != None:
-                print('11111111')
                 userSol.updatedAt = postedSol['postedAt']
                 userSol.xml = postedSol['xml']
 
@@ -220,7 +251,6 @@ def save_sol():
                 return jsonify(result=True, msg="Successful to save solution.")
             # 한번도 저장된 solution이 아닐 때
             else:
-                print('222222222222')
                 userSol = UserSolution(app.usersol_id, postedSol['uid'], postedSol['pid'], postedSol['postedAt'], None,
                                        None, postedSol['xml'], None, None)
                 app.usersol_id += 1
