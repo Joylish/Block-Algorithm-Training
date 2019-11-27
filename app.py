@@ -352,46 +352,46 @@ def submit_sol():
 def view_my_status(uid=''):
     per_page = 10
     page = request.args.get('page')
+    print(page)
     category = request.args.get('category')
     usersub = []
     try:
         #pagination 지정될 때 
         if page:
+            print('111111')
             state = "select UserSolution.id as sid, UserSolution.pid, \
-                               UserSolution.uid, category, submittedAt, accept, title \
-                               from UserSolution, Problem \
-                               where UserSolution.pid=Problem.id  \
-                               and UserSolution.uid = " + uid + " and UserSolution.submittedAt is not null\
-                               .order_by(Problem.createdAt.asc())\
-                               .paginate(int(page), per_page, error_out=False) \
-                               .items "
-            resultt = pd.read_sql(state, db.session.bind)
-            resulttt = json.loads(resultt.to_json(orient='records'))
-
-            for item in resulttt:
+                                                       UserSolution.uid, category, submittedAt, accept, title \
+                                                       from UserSolution, Problem \
+                                                       where UserSolution.pid=Problem.id  \
+                                                       and UserSolution.uid = " + uid + " and UserSolution.submittedAt is not null"
+            resultt = pd.read_sql(state, db.session.bind)\
+                .order_by(Problem.createdAt.asc())\
+                .paginate(int(page), per_page, error_out=False)
+            print('222222')
+            for item in resultt:
                 item['testResult'] = []
                 testResultQuery = TestResult.query.filter(TestResult.sid == int(item['sid']))
                 testResultBySid = pd.read_sql(testResultQuery.statement, testResultQuery.session.bind)
                 item['testResult'] = json.loads(testResultBySid.to_json(orient='records'))
-
+                print(item)
             # query parameter category에 정수값이 지정될 때
             if category:
-                for item in resulttt:
+                for item in resultt:
                     if item['uid'] == int(uid) and item['category'] == category:
                         usersub.append(item)
             # query parameter가 없을 때
             else:
-                for item in resulttt:
+                for item in resultt:
                     if item['uid'] == int(uid):
                         usersub.append(item)
             return jsonify(result=True, data=usersub)
         #pagination 지정되지 않을때
         else:
             state = "select UserSolution.id as sid, UserSolution.pid, \
-                                           UserSolution.uid, category, submittedAt, accept, title \
-                                           from UserSolution, Problem \
-                                           where UserSolution.pid=Problem.id  \
-                                           and UserSolution.uid = " + uid + " and UserSolution.submittedAt is not null"
+                                                       UserSolution.uid, category, submittedAt, accept, title \
+                                                       from UserSolution, Problem \
+                                                       where UserSolution.pid=Problem.id  \
+                                                       and UserSolution.uid = " + uid + " and UserSolution.submittedAt is not null"
             resultt = pd.read_sql(state, db.session.bind)
             resulttt = json.loads(resultt.to_json(orient='records'))
 
