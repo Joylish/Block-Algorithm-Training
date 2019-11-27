@@ -1,5 +1,11 @@
+**Block Solve ER Diagram**
+----
+
+![BlockSolve_ERD](BlockSolve_ERD.png)
+
 **BlockSolve API Document**
 ----
+
   Returns json data about a single user.
 
 * **URL**
