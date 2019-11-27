@@ -350,34 +350,68 @@ def submit_sol():
 
 @app.route('/status/<uid>', methods=['GET'])
 def view_my_status(uid=''):
-    usersub = []
+    per_page = 10
+    page = request.args.get('page')
     category = request.args.get('category')
+    usersub = []
     try:
-        state = "select UserSolution.id as sid, UserSolution.pid, \
-                    UserSolution.uid, category, submittedAt, accept, title \
-                    from UserSolution, Problem \
-                    where UserSolution.pid=Problem.id  \
-                    and UserSolution.uid = " + uid + " and UserSolution.submittedAt is not null"
-        resultt = pd.read_sql(state, db.session.bind)
-        resulttt = json.loads(resultt.to_json(orient='records'))
+        #pagination 지정될 때 
+        if page:
+            state = "select UserSolution.id as sid, UserSolution.pid, \
+                               UserSolution.uid, category, submittedAt, accept, title \
+                               from UserSolution, Problem \
+                               where UserSolution.pid=Problem.id  \
+                               and UserSolution.uid = " + uid + " and UserSolution.submittedAt is not null\
+                               .order_by(Problem.createdAt.asc())\
+                               .paginate(int(page), per_page, error_out=False) \
+                               .items "
+            resultt = pd.read_sql(state, db.session.bind)
+            resulttt = json.loads(resultt.to_json(orient='records'))
 
-        for item in resulttt:
-            item['testResult'] = []
-            testResultQuery = TestResult.query.filter(TestResult.sid == int(item['sid']))
-            testResultBySid = pd.read_sql(testResultQuery.statement, testResultQuery.session.bind)
-            item['testResult'] = json.loads(testResultBySid.to_json(orient='records'))
-
-        # query parameter category에 정수값이 지정될 때
-        if category:
             for item in resulttt:
-                if item['uid'] == int(uid) and item['category'] == category:
-                    usersub.append(item)
-        # query parameter가 없을 때
+                item['testResult'] = []
+                testResultQuery = TestResult.query.filter(TestResult.sid == int(item['sid']))
+                testResultBySid = pd.read_sql(testResultQuery.statement, testResultQuery.session.bind)
+                item['testResult'] = json.loads(testResultBySid.to_json(orient='records'))
+
+            # query parameter category에 정수값이 지정될 때
+            if category:
+                for item in resulttt:
+                    if item['uid'] == int(uid) and item['category'] == category:
+                        usersub.append(item)
+            # query parameter가 없을 때
+            else:
+                for item in resulttt:
+                    if item['uid'] == int(uid):
+                        usersub.append(item)
+            return jsonify(result=True, data=usersub)
+        #pagination 지정되지 않을때
         else:
+            state = "select UserSolution.id as sid, UserSolution.pid, \
+                                           UserSolution.uid, category, submittedAt, accept, title \
+                                           from UserSolution, Problem \
+                                           where UserSolution.pid=Problem.id  \
+                                           and UserSolution.uid = " + uid + " and UserSolution.submittedAt is not null"
+            resultt = pd.read_sql(state, db.session.bind)
+            resulttt = json.loads(resultt.to_json(orient='records'))
+
             for item in resulttt:
-                if item['uid'] == int(uid):
-                    usersub.append(item)
-        return jsonify(result=True, data=usersub)
+                item['testResult'] = []
+                testResultQuery = TestResult.query.filter(TestResult.sid == int(item['sid']))
+                testResultBySid = pd.read_sql(testResultQuery.statement, testResultQuery.session.bind)
+                item['testResult'] = json.loads(testResultBySid.to_json(orient='records'))
+
+            # query parameter category에 정수값이 지정될 때
+            if category:
+                for item in resulttt:
+                    if item['uid'] == int(uid) and item['category'] == category:
+                        usersub.append(item)
+            # query parameter가 없을 때
+            else:
+                for item in resulttt:
+                    if item['uid'] == int(uid):
+                        usersub.append(item)
+            return jsonify(result=True, data=usersub)
     except:
         return jsonify(result=False, err_msg="Bad request")
 
