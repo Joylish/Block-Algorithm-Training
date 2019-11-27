@@ -426,70 +426,83 @@ def submit_sol():
 def view_my_status(uid=''):
     per_page = 10
     page = request.args.get('page')
-    print(page)
     category = request.args.get('category')
     usersub = []
     try:
-        #pagination 지정될 때
+        # pagination 지정될 때
         if page:
-            print('111111')
-            state = "select UserSolution.id as sid, UserSolution.pid, \
-                                                       UserSolution.uid, category, submittedAt, accept, title \
-                                                       from UserSolution, Problem \
-                                                       where UserSolution.pid=Problem.id  \
-                                                       and UserSolution.uid = " + uid + " and UserSolution.submittedAt is not null"
-            resultt = pd.read_sql(state, db.session.bind)\
-                .order_by(Problem.createdAt.asc())\
-                .paginate(int(page), per_page, error_out=False)
-            print('222222')
-            for item in resultt:
+            queryByPage = UserSolution.query.join(Problem). \
+                with_entities(UserSolution.id, UserSolution.uid, UserSolution.pid,
+                              UserSolution.createdAt, UserSolution.updatedAt,
+                              UserSolution.submittedAt, UserSolution.xml,
+                              UserSolution.sourceCode, UserSolution.accept,
+                              Problem.category, Problem.title). \
+                filter(UserSolution.pid == Problem.id).order_by(Problem.createdAt.asc()). \
+                paginate(int(page), per_page, error_out=False).items
+            cols = ['sid', 'uid', 'pid', 'createdAt', 'updatedAt', 'submittedAt', 'xml',
+                    'sourceCode', 'accept', 'category', 'title']
+            problemsByPage = []
+            for i in queryByPage:
+                cnt = 0
+                jsonn = {}
+                for col in cols:
+                    jsonn[col] = i[cnt]
+                    cnt += 1
+                problemsByPage.append(jsonn)
+
+            for item in problemsByPage:
                 item['testResult'] = []
                 testResultQuery = TestResult.query.filter(TestResult.sid == int(item['sid']))
                 testResultBySid = pd.read_sql(testResultQuery.statement, testResultQuery.session.bind)
                 item['testResult'] = json.loads(testResultBySid.to_json(orient='records'))
-                print(item)
+
             # query parameter category에 정수값이 지정될 때
             if category:
-                for item in resultt:
+                for item in problemsByPage:
                     if item['uid'] == int(uid) and item['category'] == category:
                         usersub.append(item)
             # query parameter가 없을 때
             else:
-                for item in resultt:
+                for item in problemsByPage:
                     if item['uid'] == int(uid):
                         usersub.append(item)
             return jsonify(result=True, data=usersub)
-        #pagination 지정되지 않을때
+
+        # pagination 지정되지 않을때
         else:
-            state = "select UserSolution.id as sid, UserSolution.pid, \
-                                                       UserSolution.uid, category, submittedAt, accept, title \
-                                                       from UserSolution, Problem \
-                                                       where UserSolution.pid=Problem.id  \
-                                                       and UserSolution.uid = " + uid + " and UserSolution.submittedAt is not null"
-            resultt = pd.read_sql(state, db.session.bind)
-            resulttt = json.loads(resultt.to_json(orient='records'))
+            queryByPa = UserSolution.query.join(Problem). \
+                with_entities(UserSolution.id, UserSolution.uid, UserSolution.pid,
+                              UserSolution.createdAt, UserSolution.updatedAt,
+                              UserSolution.submittedAt, UserSolution.xml,
+                              UserSolution.sourceCode, UserSolution.accept,
+                              Problem.category, Problem.title). \
+                filter(UserSolution.pid == Problem.id).order_by(Problem.createdAt.asc())
+            queryByPag = pd.read_sql(queryByPa.statement, queryByPa.session.bind)
+            queryByPage = json.loads(queryByPag.to_json(orient='records'))
+            problemsByPage = []
 
-            for item in resulttt:
-                print(type(item))
+            for i in queryByPage:
+                problemsByPage.append(i)
+            for item in problemsByPage:
                 item['testResult'] = []
-                testResultQuery = TestResult.query.filter(TestResult.sid == int(item['sid']))
+                testResultQuery = TestResult.query.filter(TestResult.sid == int(item['id']))
                 testResultBySid = pd.read_sql(testResultQuery.statement, testResultQuery.session.bind)
                 item['testResult'] = json.loads(testResultBySid.to_json(orient='records'))
 
             # query parameter category에 정수값이 지정될 때
             if category:
-                for item in resulttt:
+                for item in problemsByPage:
                     if item['uid'] == int(uid) and item['category'] == category:
                         usersub.append(item)
             # query parameter가 없을 때
             else:
-                for item in resulttt:
+                for item in problemsByPage:
                     if item['uid'] == int(uid):
                         usersub.append(item)
             return jsonify(result=True, data=usersub)
-    except:
+    except Exception as ex:
         return jsonify(result=False, err_msg="Bad request")
 
-
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port="5000", debug = True)
+    app.run(host="127.0.0.1", port="5000", debug=True)
+
