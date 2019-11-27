@@ -146,22 +146,22 @@ class UserSolution(db.Model):
         self.sourceCode = sourceCode
         self.accept = accept
 
-@app.route('/problems', methods=['GET', 'OPTIONS'])
-def view_problems():
+@app.route('/problems/<int:page>', methods=['GET', 'OPTIONS'])
+def view_problems(page=1):
+    per_page = 10
     category = request.args.get('category')
     # query parameter category에 정수값이 지정될 때
     if category:
-        queryByCategory = Problem.query.filter(Problem.category == category)
-        problemByCategory = pd.read_sql(queryByCategory.statement, queryByCategory.session.bind)
-        print(queryByCategory.all())
-        print(json.loads(problemByCategory.to_json(orient='records')))
-        return jsonify(data = json.loads(problemByCategory.to_json(orient='records')))
+        queryByCategory = Problem.query.filter(Problem.category == category).order_by(Problem.createdAt.asc()).paginate(page, per_page, error_out=False)
+        problemsBindByCategory = pd.read_sql(queryByCategory.statement, queryByCategory.session.bind)
+        pdroblemsByCategory = json.loads(problemsBindByCategory.to_json(orient='records'))
+        return jsonify(data = problemsByCategory, result = True)
     else:
         # 모든 problem 불러오기
-        queryInAll = Problem.query.filter(Problem.pid > 0)
-        problemInAll = pd.read_sql(queryInAll.statement, queryInAll.session.bind)
-        return jsonify(data = json.loads(problemInAll.to_json(orient='records')))
-
+        queryInAll = Problem.query.filter(Problem.id > 0).order_by(Problem.createdAt.asc()).paginate(page, per_page, error_out=False)
+        problemsBindInAll = pd.read_sql(queryInAll.statement, queryInAll.session.bind)
+        problemsInAll = json.loads(problemsBindInAll.to_json(orient='records'))
+        return jsonify(data = problemsInAll, result = True)
 
 @app.route('/problems/<pid>', methods=['GET', 'OPTIONS'])
 def view_each_problem(pid=''):
@@ -174,9 +174,8 @@ def view_each_problem(pid=''):
         exampleQuery = Example.query.filter(Example.pid == int(pid))
         exampleByPid = pd.read_sql(exampleQuery.statement, exampleQuery.session.bind)
         examples = json.loads(exampleByPid.to_json(orient='records'))
-        print(examples)
+
         for item in examples:
-            print(item)
             if item['pid'] == int(pid):
                 tmp = item.copy()
                 del tmp['id']
