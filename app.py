@@ -333,37 +333,33 @@ def view_my_status(uid=''):
     usersub = []
     category = request.args.get('category')
     try:
-        for u,t,p in db.session.query(UserSolution,TestResult,Problem).\
-                filter(UserSolution.pid==Problem.id).\
-                filter(TestResult.sid == UserSolution.id). \
-                filter(UserSolution.uid == int(uid)).\
-                filter(UserSolution.submittedAt.isnot(None)):
-            uu = pd.read_sql(u.statement, u.session.bind)
-            uuu = json.loads(uu.to_json(orient='records'))
-            tt = pd.read_sql(t.statement, t.session.bind)
-            ttt = json.loads(tt.to_json(orient='records'))
-            pp = pd.read_sql(p.statement, p.session.bind)
-            ppp = json.loads(pp.to_json(orient='records'))
+        state = "select UserSolution.id as sid, UserSolution.pid, \
+                    UserSolution.uid, category, submittedAt, accept, title \
+                    from UserSolution, Problem \
+                    where UserSolution.pid=Problem.id  \
+                    and UserSolution.uid = " + uid + " and UserSolution.submittedAt is not null"
+        resultt = pd.read_sql(state, db.session.bind)
+        resulttt = json.loads(resultt.to_json(orient='records'))
 
-            print(uuu)
-            print(ttt)
-            print(ppp)
+        for item in resulttt:
+            item['testResult'] = []
+            testResultQuery = TestResult.query.filter(TestResult.sid == int(item['sid']))
+            testResultBySid = pd.read_sql(testResultQuery.statement, testResultQuery.session.bind)
+            item['testResult'] = json.loads(testResultBySid.to_json(orient='records'))
+
         # query parameter category에 정수값이 지정될 때
         if category:
-            for item in usersub:
-                if item.uid == int(uid) and item.category == category:
+            for item in resulttt:
+                if item['uid'] == int(uid) and item['category'] == category:
                     usersub.append(item)
-            usersub = addTestResult(usersub)
         # query parameter가 없을 때
         else:
-            for item in userSubSol:
-                if item.uid == int(uid):
+            for item in resulttt:
+                if item['uid'] == int(uid):
                     usersub.append(item)
-            usersub = addTestResult(usersub)
         return jsonify(result=True, data=usersub)
     except:
         return jsonify(result=False, err_msg="Bad request")
-
 
 
 if __name__ == "__main__":
