@@ -221,13 +221,6 @@ def view_each_problem(pid=''):
         return jsonify(result = False, err_msg = "Not found")
 
 #임시저장
-int_pid = 1000
-
-app.aid_count = 1
-app.svsol = [{'pid': 1001, 'uid': 1, 'savedAt': 1570805217, 'savedXML':'<xml><block type="text_print" x="30" y="90"><value name="TEXT"><block type="text"><field name="TEXT">abc</field></block></value></block></xml>'},
-                {'pid': 1002, 'uid': 1, 'savedAt': 1570805217, 'savedXML':'<xml></xml>'},
-                  {'pid': 1003, 'uid': 1, 'savedAt': 1570805217, 'savedXML':'<xml></xml>'}]
-
 def on_json_loading_failed_return_dict(e):
     return jsonify(result = False)
 
@@ -237,7 +230,6 @@ def save_sol():
     if request.method == 'POST':
         request.on_json_loading_failed = on_json_loading_failed_return_dict
         postedSol = request.get_json(force=True)
-
         try:
             userSol = UserSolution.query.filter(
                 UserSolution.pid == postedSol['pid'] and UserSolution.submittedAt.is_(None)).first()
@@ -246,9 +238,9 @@ def save_sol():
             if userSol != None:
                 userSol.updatedAt = postedSol['postedAt']
                 userSol.xml = postedSol['xml']
-
                 db.session.commit()
-                return jsonify(result=True, msg="Successful to save solution.")
+                return jsonify(UserSolutionID = app.usersol_id, result=True, msg="Successful to save solution.")
+
             # 한번도 저장된 solution이 아닐 때
             else:
                 userSol = UserSolution(app.usersol_id, postedSol['uid'], postedSol['pid'], postedSol['postedAt'], None,
@@ -256,9 +248,9 @@ def save_sol():
                 app.usersol_id += 1
                 db.session.add(userSol)
                 db.session.commit()
-                return jsonify(result=True, msg="Successful to create solution.")
+                return jsonify(UserSolutionID = app.usersol_id-1, result=True, msg="Successful to create solution.")
         except:
-            return jsonify(result=False, err_msg="Check your key")
+            return jsonify(result=False, err_msg="Check your key and value")
 
     elif request.method == 'GET':
         uid = int(request.args.get('uid'))
@@ -266,12 +258,11 @@ def save_sol():
         userSolQuery = UserSolution.query.filter(UserSolution.pid == pid and UserSolution.uid == uid).filter(UserSolution.submittedAt == None)
         userSolByPid = pd.read_sql(userSolQuery.statement, userSolQuery.session.bind)
         userSols = json.loads(userSolByPid.to_json(orient='records'))
-
         # 한번 저장된 solution일 때
         if len(userSols) != 0:
-            return jsonify(data = userSols, result = True)
+            return jsonify(UserSolutionID = app.usersol_id, data = userSols, result = True)
         else:
-            return jsonify(result=False, err_msg="Not found")
+            return jsonify(result=False, err_msg="Not found. Check uid and pid.")
 
 #제출
 
