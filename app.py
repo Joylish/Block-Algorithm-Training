@@ -168,57 +168,63 @@ def view_problems():
     page = request.args.get('page')
     category = request.args.get('category')
     # query parameter category에 정수값이 지정될 때
-    if page:
-        if category:
-            queryByCategory = Problem.query.filter(Problem.category == category).order_by(Problem.createdAt.asc()).paginate(int(page), per_page, error_out=False).items
-            problemsByCategory = []
-            for i in queryByCategory:
-                problemsByCategory.append(i.to_json())
-            return jsonify(data = problemsByCategory, result = True)
+    try:
+        if page:
+            if category:
+                queryByCategory = Problem.query.filter(Problem.category == category).order_by(Problem.createdAt.asc()).paginate(int(page), per_page, error_out=False).items
+                problemsByCategory = []
+                for i in queryByCategory:
+                    problemsByCategory.append(i.to_json())
+                return jsonify(data = problemsByCategory, result = True)
+            else:
+                # 모든 problem 불러오기
+                queryInAll = Problem.query.order_by(Problem.createdAt.asc()).paginate(int(page), per_page, error_out=False).items
+                problemsInAll = []
+                for i in queryInAll:
+                    problemsInAll.append(i.to_json())
+                return jsonify(data = problemsInAll, result = True)
         else:
-            # 모든 problem 불러오기
-            queryInAll = Problem.query.order_by(Problem.createdAt.asc()).paginate(int(page), per_page, error_out=False).items
-            problemsInAll = []
-            for i in queryInAll:
-                problemsInAll.append(i.to_json())
-            return jsonify(data = problemsInAll, result = True)
-    else:
-        if category:
-            queryByCategory = Problem.query.filter(Problem.category == category)
-            problemsBindByCategory = pd.read_sql(queryByCategory.statement, queryByCategory.session.bind)
-            problemsByCategory = json.loads(problemsBindByCategory.to_json(orient='records'))
-            return jsonify(data=problemsByCategory, result=True)
-        else:
-            # 모든 problem 불러오기
-            queryInAll = Problem.query.filter(Problem.id > 0)
-            problemsBindInAll = pd.read_sql(queryInAll.statement, queryInAll.session.bind)
-            problemsInAll = json.loads(problemsBindInAll.to_json(orient='records'))
-            return jsonify(data=problemsInAll, result=True)
+            if category:
+                queryByCategory = Problem.query.filter(Problem.category == category)
+                problemsBindByCategory = pd.read_sql(queryByCategory.statement, queryByCategory.session.bind)
+                problemsByCategory = json.loads(problemsBindByCategory.to_json(orient='records'))
+                return jsonify(data=problemsByCategory, result=True)
+            else:
+                # 모든 problem 불러오기
+                queryInAll = Problem.query.filter(Problem.id > 0)
+                problemsBindInAll = pd.read_sql(queryInAll.statement, queryInAll.session.bind)
+                problemsInAll = json.loads(problemsBindInAll.to_json(orient='records'))
+                return jsonify(data=problemsInAll, result=True)
+    except:
+        return jsonify(result=False, err_msg="Check your URI")
 
 @app.route('/problems/<pid>', methods=['GET', 'OPTIONS'])
 def view_each_problem(pid=''):
     tc = []
     problemQuery = Problem.query.filter(Problem.id == pid)
-    if problemQuery.count():
-        problemByPid = pd.read_sql(problemQuery.statement, problemQuery.session.bind)
-        problem = json.loads(problemByPid.to_json(orient='records'))
+    try:
+        if problemQuery.count():
+            problemByPid = pd.read_sql(problemQuery.statement, problemQuery.session.bind)
+            problem = json.loads(problemByPid.to_json(orient='records'))
 
-        exampleQuery = Example.query.filter(Example.pid == int(pid))
-        exampleByPid = pd.read_sql(exampleQuery.statement, exampleQuery.session.bind)
-        examples = json.loads(exampleByPid.to_json(orient='records'))
+            exampleQuery = Example.query.filter(Example.pid == int(pid))
+            exampleByPid = pd.read_sql(exampleQuery.statement, exampleQuery.session.bind)
+            examples = json.loads(exampleByPid.to_json(orient='records'))
 
-        for item in examples:
-            if item['pid'] == int(pid):
-                tmp = item.copy()
-                del tmp['id']
-                del tmp['pid']
-                tc.append(tmp)
-            else:
-                break
-        problem[0]["examples"] = tc
-        return jsonify(data = problem[0], result = True)
-    else :
-        return jsonify(result = False, err_msg = "Not found")
+            for item in examples:
+                if item['pid'] == int(pid):
+                    tmp = item.copy()
+                    del tmp['id']
+                    del tmp['pid']
+                    tc.append(tmp)
+                else:
+                    break
+            problem[0]["examples"] = tc
+            return jsonify(data = problem[0], result = True)
+        else :
+            return jsonify(result = False, err_msg = "Not found")
+    except:
+        return jsonify(result=False, err_msg="Check your URI or pid")
 
 #임시저장
 def on_json_loading_failed_return_dict(e):
