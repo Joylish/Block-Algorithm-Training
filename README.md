@@ -14,32 +14,24 @@
 
 * **Method:**
 
-  `GET` | `POST`
+  `GET`
   
-*  **URL Params**
+* **Request and Response:**
 
-   **Required:**
-
-   None
-
-* **Data Params**
-
-  * page
-
-  * category
-
-* **Success Response:**
-
-  * **Code:** 200 <br />
-    **Content:** `{ data : [problems], result: true }`
-
-* **Error Response:**
-
-  * **Code:** 404 NOT FOUND <br />
-    **Content:** `{ error : "User doesn't exist" }`
-
-* **Sample Call:**
-
+  * **URL Params**
+  
+    **Required:**
+  
+    None
+  
+  * **Data Params**
+  
+    * page
+  
+    * category
+  
+      /problems?page=1&category=수학
+  
   ```json
   {
     "data": [
@@ -90,16 +82,6 @@
 
   None
 
-* **Success Response:**
-
-  * **Code:** 200 <br />
-    **Content:** `{ data : problem, result: true }`
-
-* **Error Response:**
-
-  * **Code:** 404 NOT FOUND <br />
-    **Content:** `{ error : "Not found", result: false }`
-
 * **Sample Call:**
 
   ```json
@@ -141,28 +123,6 @@
 
   `GET` | `POST` 
 
-* **URL Params**
-
-  **Required:**
-
-  None
-
-* **Data Params**
-
-  * uid
-
-  * pid
-
-* **Success Response:**
-
-  * **Code:** 200 <br />
-    **Content:** `{ data : [problems], result: true }`
-
-* **Error Response:**
-
-  * **Code:** 404 NOT FOUND <br />
-    **Content:** `{ result: false, error : "Not found" }`
-
 * **Sample Call:** 
 
   *  `POST` 
@@ -202,23 +162,37 @@
 
   * `GET` 
 
+    * **URL Params**
+    
+      **Required:**
+    
+      None
+    
+* **Data Params**
+    
+  * uid
+    
+      * pid
+    
+        /save?uid=1&pid=1000
+    
     ```json
     {
       "err_msg": "Not found. Check uid and pid.",
       "result": false
     }
     ```
-
+    
      한 번도 저장되지 않은 solution일 때 response
-
+    
     ```json
     {
       "UserSolutionID": 1,
       "data": [
         {
-          "accept": null,
+      "accept": null,
           "createdAt": 1543062625477,
-          "id": 1,
+      "id": 1,
           "pid": 1001,
           "sourceCode": null,
           "submittedAt": null,
@@ -230,9 +204,9 @@
       "result": true
     }
     ```
-
+    
     한 번이상 저장된 solution일 때 response
-
+    
     ```json
     {
       "UserSolutionID": 1,
@@ -253,23 +227,11 @@
     }
     ```
 
-**3) URL**    /save
+**3) URL**    /submit
 
 * **Method:**
 
   `GET` | `POST` 
-
-* **URL Params**
-
-  **Required:**
-
-  None
-
-* **Data Params**
-
-  * uid
-
-  * pid`
 
 * **Request and Response:** 
 
@@ -282,7 +244,7 @@
     		"pid": 1000, 
     		"uid": 1,
     		"postedAt": 2155, 
-    		"xml":"<xml>print(a+b)</xml>"
+    		"xml":"<xml>print(a+b)</xml>",
         	"sourceCode": "print(a+b)"
     }
     ```
@@ -323,13 +285,11 @@
         "result": true
       }
       ```
-
-  
-
-  * * 저장되었던  solution일 때 response
-
+    
+      * 저장되었던  solution일 때 response
+    
       ```json
-      {
+    {
         "data": {
           "accept": true,
           "testResult": [
@@ -360,7 +320,34 @@
         "result": true
       }
       ```
-
   
+  * `GET` 
 
+    * request 
+
+      * **Data Params**
   
+        **Required**
+  
+        sid
+  
+        /submit?sid=1
+  
+    ```json
+    {
+      "data": [
+        {
+          "accept": true,
+          "createdAt": 2132155,
+          "id": 1,
+          "pid": 1000,
+          "sourceCode": "print(a+b)",
+          "submittedAt": 2132155,
+          "uid": 1,
+          "updatedAt": 2132155,
+          "xml": "<xml>z</xml>"
+        }
+      ],
+      "result": true
+    }
+    ```
