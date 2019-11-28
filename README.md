@@ -288,43 +288,47 @@
   
       * 저장되었던  solution일 때 response
   
-      ```json
-    {
-        "data": {
-          "accept": true,
-          "testResult": [
-            {
-              "id": 1,
-              "result": true,
-              "scoredAt": 1574900472404,
-              "sid": 1,
-              "tid": 1
-            },
-            {
-              "id": 2,
-              "result": true,
-              "scoredAt": 1574900472421,
-              "sid": 1,
-              "tid": 2
-            },
-            {
-              "id": 3,
-              "result": true,
-              "scoredAt": 1574900472436,
-              "sid": 1,
-              "tid": 3
-            }
-          ]
-        },
-        "msg": "Successful to submit solution.",
-        "result": true
-      }
-      ```
-  
+        ```json
+      {
+          "data": {
+            "accept": true,
+            "testResult": [
+              {
+                "id": 1,
+                "result": true,
+                "scoredAt": 1574900472404,
+                "sid": 1,
+                "tid": 1
+              },
+              {
+                "id": 2,
+                "result": true,
+                "scoredAt": 1574900472421,
+                "sid": 1,
+                "tid": 2
+              },
+              {
+                "id": 3,
+                "result": true,
+                "scoredAt": 1574900472436,
+                "sid": 1,
+                "tid": 3
+              }
+            ]
+          },
+          "msg": "Successful to submit solution.",
+          "result": true
+        }
+        ```
+      
+        
+    
+      
+
   * `GET` 
-
+  
     * request 
-
+  
       * **Data Params**
   
         **Required**
