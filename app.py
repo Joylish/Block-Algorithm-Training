@@ -250,6 +250,11 @@ def save_sol():
     if request.method == 'POST':
         request.on_json_loading_failed = on_json_loading_failed_return_dict
         postedSol = request.get_json(force=True)
+        UserSolutionForBigID = UserSolution.query.order_by(UserSolution.id.desc()).first()
+        if UserSolutionForBigID:
+            usersol_id = int(UserSolutionForBigID.id)
+        else:
+            usersol_id = 1
         try:
             userSol = UserSolution.query.filter(
                 UserSolution.pid == postedSol['pid'] and UserSolution.submittedAt.is_(None)).first()
@@ -259,16 +264,18 @@ def save_sol():
                 userSol.updatedAt = postedSol['postedAt']
                 userSol.xml = postedSol['xml']
                 db.session.commit()
-                return jsonify(UserSolutionID = app.usersol_id, result=True, msg="Successful to save solution.")
+                return jsonify(UserSolutionID = usersol_id, result=True, msg="Successful to save solution.")
 
             # 한번도 저장된 solution이 아닐 때
             else:
-                userSol = UserSolution(app.usersol_id, postedSol['uid'], postedSol['pid'], postedSol['postedAt'], None,
+                usersol_id += 1
+                userSol = UserSolution(usersol_id, postedSol['uid'], postedSol['pid'], postedSol['postedAt'], None,
                                        None, postedSol['xml'], None, None)
-                app.usersol_id += 1
+                print(userSol)
+                print(usersol_id)
                 db.session.add(userSol)
                 db.session.commit()
-                return jsonify(UserSolutionID = app.usersol_id-1, result=True, msg="Successful to create solution.")
+                return jsonify(UserSolutionID = usersol_id, result=True, msg="Successful to create solution.")
         except:
             return jsonify(result=False, err_msg="Check your key and value")
 
