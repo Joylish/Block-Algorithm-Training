@@ -252,3 +252,115 @@
       "result": true
     }
     ```
+
+**3) URL**    /save
+
+* **Method:**
+
+  `GET` | `POST` 
+
+* **URL Params**
+
+  **Required:**
+
+  None
+
+* **Data Params**
+
+  * uid
+
+  * pid`
+
+* **Request and Response:** 
+
+  * `POST` 
+
+    * request 
+
+    ```json
+    {
+    		"pid": 1000, 
+    		"uid": 1,
+    		"postedAt": 2155, 
+    		"xml":"<xml>print(a+b)</xml>"
+        	"sourceCode": "print(a+b)"
+    }
+    ```
+
+    * response
+
+      한 번도 제출되지 않은 solution일 때 response
+
+      ```json
+      {
+        "data": {
+          "accept": true,
+          "testResult": [
+            {
+              "id": 1,
+              "result": true,
+              "scoredAt": 1574900472404,
+              "sid": 1,
+              "tid": 1
+            },
+            {
+              "id": 2,
+              "result": true,
+              "scoredAt": 1574900472421,
+              "sid": 1,
+              "tid": 2
+            },
+            {
+              "id": 3,
+              "result": true,
+              "scoredAt": 1574900472436,
+              "sid": 1,
+              "tid": 3
+            }
+          ]
+        },
+        "msg": "Successful to create and submit solution.",
+        "result": true
+      }
+      ```
+
+  
+
+  * * 저장되었던  solution일 때 response
+
+      ```json
+      {
+        "data": {
+          "accept": true,
+          "testResult": [
+            {
+              "id": 1,
+              "result": true,
+              "scoredAt": 1574900472404,
+              "sid": 1,
+              "tid": 1
+            },
+            {
+              "id": 2,
+              "result": true,
+              "scoredAt": 1574900472421,
+              "sid": 1,
+              "tid": 2
+            },
+            {
+              "id": 3,
+              "result": true,
+              "scoredAt": 1574900472436,
+              "sid": 1,
+              "tid": 3
+            }
+          ]
+        },
+        "msg": "Successful to submit solution.",
+        "result": true
+      }
+      ```
+
+  
+
+  
