@@ -72,18 +72,18 @@
 
   `GET`
 
-* **URL Params**
+* **Request and Response:**
 
-  **Required:**
-
-  `pid=[integer]`
-
-* **Data Params**
-
-  None
-
-* **Sample Call:**
-
+  * **URL Params**
+  
+    **Required:**
+  
+    `pid=[integer]`
+  
+  * **Data Params**
+  
+    None
+  
   ```json
   {
     "data": {
@@ -123,7 +123,7 @@
 
   `GET` | `POST` 
 
-* **Sample Call:** 
+* **Request and Response:** 
 
   *  `POST` 
 
@@ -167,13 +167,13 @@
       **Required:**
     
       None
-    
-* **Data Params**
-    
-  * uid
-    
+      
+    * **Data Params**
+      
+      * uid
+      
       * pid
-    
+      
         /save?uid=1&pid=1000
     
     ```json
@@ -227,7 +227,7 @@
     }
     ```
 
-**3) URL**    /submit
+**4) URL**    /submit
 
 * **Method:**
 
@@ -285,9 +285,9 @@
         "result": true
       }
       ```
-    
+  
       * 저장되었던  solution일 때 response
-    
+  
       ```json
     {
         "data": {
@@ -351,3 +351,73 @@
       "result": true
     }
     ```
+
+**5) URL**    /status/:uid
+
+* **Method:**
+
+  `GET` 
+
+* **Request and Response:** 
+
+  * request 
+
+    * **URL Params**
+
+      **Required:**
+
+      `uid=[integer]`
+
+    * **Data Params**
+
+      - page
+
+      - category
+
+        /status/1?page=1&category=수학
+
+        ```json
+        {
+          "data": [
+            {
+              "accept": true,
+              "category": "수학",
+              "createdAt": 2132155,
+              "id": 1,
+              "pid": 1000,
+              "sourceCode": "print(a+b)",
+              "submittedAt": 2132155,
+              "testResult": [
+                {
+                  "id": 1,
+                  "result": 1,
+                  "scoredAt": 1574900472404,
+                  "sid": 1,
+                  "tid": 1
+                },
+                {
+                  "id": 2,
+                  "result": 1,
+                  "scoredAt": 1574900472421,
+                  "sid": 1,
+                  "tid": 2
+                },
+                {
+                  "id": 3,
+                  "result": 1,
+                  "scoredAt": 1574900472436,
+                  "sid": 1,
+                  "tid": 3
+                }
+              ],
+              "title": "A+B",
+              "uid": 1,
+              "updatedAt": null,
+              "xml": "<xml>z</xml>"
+            }
+          ],
+          "result": true
+        }
+        ```
+
+        
