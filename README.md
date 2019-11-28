@@ -253,7 +253,7 @@
 
       한 번도 제출되지 않은 solution일 때 response
 
-      ```json
+     ```json
       {
         "data": {
           "accept": true,
@@ -288,8 +288,8 @@
   
       * 저장되었던  solution일 때 response
   
-        ```json
-      {
+       ```json
+        {
           "data": {
             "accept": true,
             "testResult": [
