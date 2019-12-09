@@ -1,7 +1,6 @@
 
 # -*- coding: utf-8 -*-
 import time
-from operator import itemgetter
 from flask import Flask, request, jsonify
 import json
 
@@ -10,7 +9,6 @@ from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
 import sys
 
-from sqlalchemy.orm import contains_eager
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -132,7 +130,7 @@ class TestResult(db.Model):
             'id': self.id,
             'tid': self.tid,
             'sid': self.sid,
-            'result': self.result,
+            'user_output': self.result,
             'scoredAt': self.scoredAt
         }
         return json
@@ -176,7 +174,7 @@ class UserSolution(db.Model):
         }
         return json
 
-@app.route('/problems', methods=['GET', 'OPTIONS'])
+@app.route('/problems', methods=['GET'])
 def view_problems():
     per_page = 10
     page = request.args.get('page')
@@ -209,10 +207,11 @@ def view_problems():
                 problemsBindInAll = pd.read_sql(queryInAll.statement, queryInAll.session.bind)
                 problemsInAll = json.loads(problemsBindInAll.to_json(orient='records'))
                 return jsonify(data=problemsInAll, result=True)
-    except:
+    except Exception as e:
+        print(e.message)
         return jsonify(result=False, err_msg="Check your URI")
 
-@app.route('/problems/<pid>', methods=['GET', 'OPTIONS'])
+@app.route('/problems/<pid>', methods=['GET'])
 def view_each_problem(pid=''):
     tc = []
     problemQuery = Problem.query.filter(Problem.id == pid)
@@ -237,14 +236,14 @@ def view_each_problem(pid=''):
             return jsonify(data = problem[0], result = True)
         else :
             return jsonify(result = False, err_msg = "Not found")
-    except:
+    except Exception as e:
+        print(e.message)
         return jsonify(result=False, err_msg="Check your URI or pid")
 
 #임시저장
 def on_json_loading_failed_return_dict(e):
     return jsonify(result = False)
 
-app.usersol_id = 1;
 @app.route('/save', methods=['POST', 'GET'])
 def save_sol():
     if request.method == 'POST':
@@ -271,12 +270,10 @@ def save_sol():
                 usersol_id += 1
                 userSol = UserSolution(usersol_id, postedSol['uid'], postedSol['pid'], postedSol['postedAt'], None,
                                        None, postedSol['xml'], None, None)
-                print(userSol)
-                print(usersol_id)
                 db.session.add(userSol)
                 db.session.commit()
                 return jsonify(UserSolutionID = usersol_id, result=True, msg="Successful to create solution.")
-        except:
+        except Exception as e:
             return jsonify(result=False, err_msg="Check your key and value")
 
     elif request.method == 'GET':
@@ -285,7 +282,6 @@ def save_sol():
         userSolQuery = UserSolution.query.filter(UserSolution.pid == pid and UserSolution.uid == uid).filter(UserSolution.submittedAt == None)
         userSolByPid = pd.read_sql(userSolQuery.statement, userSolQuery.session.bind)
         userSols = json.loads(userSolByPid.to_json(orient='records'))
-        print(type(userSols))
         # 한번 저장된 solution일 때
         if len(userSols) != 0:
             return jsonify(UserSolutionID = userSols[0]['id'], data = userSols, result = True)
@@ -294,7 +290,6 @@ def save_sol():
 
 #제출
 
-app.testresult_id = 1;
 def testAndverify(subSol, testresult_id):
     # id, uid, pid, createdAt, updatedAt, submittedAt, xml, sourceCode, accept
     pid = subSol.pid
@@ -306,34 +301,44 @@ def testAndverify(subSol, testresult_id):
     accept = True
     try:
         for i in range(len(testCase)):
-            print(testresult_id)
-            out = open('result.txt', 'w+')
-            stdout = sys.stdout
-            sys.stdout = out
-            input = testCase[i].input
-
+            try :
+                out = open('user_output'+ str(int(subSol.id) % 1000) +'.txt', 'w+')
+                stdout = sys.stdout
+                sys.stdout = out
+                testCaseInput = testCase[i].input
+            except FileNotFoundError as e:
+                print(e.message)
+                return -1
             # testCode 만들고 실행
-            testCode = input + '\n' + source
-            code = compile(testCode, '<string>', 'exec')
-            exec(code)
-
+            try:
+                testCode = testCaseInput + '\n' + source
+                code = compile(testCode, '<string>', 'exec')
+                exec(code)
+            except RuntimeError as e:
+                print(e.message)
+                return -2
             # 예상결과와 실제결과 비교
-            output = testCase[i].output + '\n'
-            result = False
-            out.seek(0,0)
-            if out.read() == output :
-                result = True
-            else:
-                 accept = False
+            try:
+                output = testCase[i].output + '\n'
+                result = False
+                out.seek(0,0)
+                if out.read() == output :
+                    result = True
+                else:
+                     accept = False
+            except RuntimeError as e:
+                print(e.message)
+                return -3
+
             testResult = TestResult(testresult_id, subSol.id, testCase[i].id,  int(round(time.time()*1000)), result)
             allresults.append(testResult.to_json())
             testresult_id += 1
             db.session.add(testResult)
             db.session.commit()
             out.close()
-            sys.stdout = stdout
-    except Exception as ex:
-        print(ex)
+            sys.stdou = stdout
+    except Exception as e:
+        print(e.message)
 
     data['accept'] = accept
     data['testResult']= allresults
@@ -422,8 +427,8 @@ def submit_sol():
                     db.session.add(subSol)
                     db.session.commit()
                     return jsonify(data= data, result=True, msg="Successful to create and submit solution.")
-        except Exception as ex:
-            print(ex)
+        except Exception as e:
+            print(e.message)
             return jsonify(result=False, err_msg="Check your request1")
 
     if request.method == 'GET':
@@ -434,7 +439,8 @@ def submit_sol():
             userSols = json.loads(userSolByPid.to_json(orient='records'))
             if len(userSols)>0:
                 return jsonify(data= userSols, result=True)
-        except:
+        except Exception as e:
+            print(e.message)
             return jsonify(result=False, err_msg="Check your request2")
 
 @app.route('/status/<uid>', methods=['GET'])
@@ -515,7 +521,8 @@ def view_my_status(uid=''):
                     if item['uid'] == int(uid):
                         usersub.append(item)
             return jsonify(result=True, data=usersub)
-    except Exception as ex:
+    except Exception as e:
+        print(e.message)
         return jsonify(result=False, err_msg="Bad request")
 
 if __name__ == "__main__":
