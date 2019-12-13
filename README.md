@@ -1,14 +1,22 @@
 **Block Solve ER Diagram**
 ----
 
-![BlockSolve_ERD](BlockSolve_ERD.png)
 
-**BlockSolve API Document**
+
+![BlockSolve_ERD](img\BlockSolve_ERD.png)
+
+
+
+## Block Solve Architecture
+
+![BlockSolve_ architecture](img\BlockSolve_ architecture.png)
+
+
+
+BlockSolve API Document
 ----
 
-  Returns json data about a single user.
-
-
+  Returns json data to client.
 
 **1. URL**	/problems
 
@@ -284,7 +292,7 @@
         "msg": "Successful to create and submit solution.",
         "result": true
       }
-      ```
+     ```
   
       * 저장되었던  solution일 때 response
   
@@ -319,9 +327,9 @@
           "msg": "Successful to submit solution.",
           "result": true
         }
-        ```
-      
-        
+       ```
+    
+    ​    
     
       
 
