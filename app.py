@@ -133,7 +133,7 @@ class TestResult(db.Model):
             'id': self.id,
             'tid': self.tid,
             'sid': self.sid,
-            'user_output': self.result,
+            'result': self.result,
             'scoredAt': self.scoredAt
         }
         return json
@@ -215,8 +215,7 @@ def view_problems():
                 problemsInAll = json.loads(problemsBindInAll.to_json(orient='records'))
                 return jsonify(data=problemsInAll, result=True)
     except Exception as e:
-        print(e.message)
-        return jsonify(result=False, error=e.message)
+        return jsonify(result=False, error=e)
 
 
 @app.route('/problems/<pid>', methods=['GET'])
@@ -245,8 +244,7 @@ def view_each_problem(pid=''):
         else:
             return jsonify(result=False, error="Not found")
     except Exception as e:
-        print(e.message)
-        return jsonify(result=False, error=e.message)
+        return jsonify(result=False, error=e)
 
 
 # 임시저장
@@ -284,7 +282,7 @@ def save_sol():
                 db.session.commit()
                 return jsonify(UserSolutionID=usersol_id, result=True, msg="Successful to create solution.")
         except Exception as e:
-            return jsonify(result=False, error=e.message)
+            return jsonify(result=False, error=e)
 
     elif request.method == 'GET':
         uid = int(request.args.get('uid'))
@@ -343,7 +341,7 @@ def testAndverify(subSol, testresult_id):
     except Exception as e:
         accept = False
         data['accept'] = accept
-        data['error'] = e.message
+        data['error'] = e
         return data
 
     data['accept'] = accept
@@ -382,17 +380,17 @@ def submit_sol():
                 # id, uid, pid, createdAt, updatedAt, submittedAt, xml, sourceCode, accept
                 subSol = UserSolution(usersol_id, postedSol['uid'], postedSol['pid'], postedSol['postedAt'], None,
                                       postedSol['postedAt'], postedSol['xml'], postedSol['sourceCode'], None)
-            result = testAndverify(subSol, testresult_id)
-            if not result['accept']:
+            testResultData = testAndverify(subSol, testresult_id)
+            if not testResultData['accept']:
                 subSol.accept = False
                 db.session.commit()
-                return jsonify(accept=result['accept'], error=result['error'])
+                return jsonify(accept=testResultData['accept'], error=testResultData['error'])
             else:
-                subSol.accept = result['accept']
+                subSol.accept = testResultData['accept']
                 db.session.commit()
-                return jsonify(result=result['result'], accept=result['accept'])
+                return jsonify(data=testResultData, result = True)
         except Exception as e:
-            return jsonify(result=False, error=e.message)
+            return jsonify(result=False, error=e)
 
     if request.method == 'GET':
         sid = int(request.args.get('sid'))
@@ -403,7 +401,7 @@ def submit_sol():
             if len(userSols) > 0:
                 return jsonify(data=userSols, result=True)
         except Exception as e:
-            return jsonify(result=False, error=e.message)
+            return jsonify(result=False, error=e)
 
 
 @app.route('/status/<uid>', methods=['GET'])
@@ -474,8 +472,7 @@ def view_my_status(uid=''):
                     usersub.append(item)
         return jsonify(result=True, data=usersub)
     except Exception as e:
-        print(e.message)
-        return jsonify(result=False, error=e.message)
+        return jsonify(result=False, error=e)
 
 
 if __name__ == "__main__":
