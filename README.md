@@ -3,13 +3,13 @@
 
 
 
-![BlockSolve_ERD](img\BlockSolve_ERD.png)
+![ERdiagram](./img/ERdiagram.png)
 
 
 
 ## Block Solve Architecture
 
-![BlockSolve_ architecture](img\BlockSolve_ architecture.png)
+![architecture](./img/architecture.png)
 
 
 
